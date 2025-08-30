@@ -1,5 +1,3 @@
-include("ProblemContext.jl")
-
 function make_problem_context_from_file(contents::IOStream)
     package_count, dependency_count, relation_count, storage_size = map(entry -> parse(Int, entry), contents |> readline |> split)
     @info "package_count: $(package_count), dependency_count: $(dependency_count),\
