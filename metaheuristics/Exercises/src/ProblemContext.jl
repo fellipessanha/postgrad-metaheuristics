@@ -5,5 +5,9 @@ struct ProblemContext
     package_scores::Vector{Integer}
     dependency_scores::Vector{Integer}
     storage_size::Real
-    dependency_list::Matrix{Bool}
+    dependency_matrix::Matrix{Bool}
+end
+
+struct Solution
+    used_packages::AbstractArray{Integer}
 end
