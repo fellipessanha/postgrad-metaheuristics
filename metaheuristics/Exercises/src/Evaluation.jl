@@ -1,4 +1,11 @@
+function evaluate(problem::ProblemContext, solution::AbstractVector{T}) where T<:Integer
+    score = [problem.package_scores[i] for i in solution] |> sum
 
+    dependencies = get_all_dependencies_used_dependencies(problem, solution)
+    cost = [problem.dependency_weights[i] for i in dependencies] |> sum
+    oversize_penalty = cost > problem.storage_size ? cost * problem.penalty_cost : 0
+    return score - oversize_penalty
+end
 
 function get_dependencies_used_by_package(dependency_matrix::Matrix{Bool}, package::Integer)
     package_dependencies = dependency_matrix[package, :]
