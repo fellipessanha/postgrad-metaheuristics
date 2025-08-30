@@ -13,5 +13,13 @@ for instance in test_instance_filepaths
     summary = join(context_variables, '-')
 
     @test occursin(summary, instance)
-    @test context.storage_size == 12180
+
+    first_package_dependencies = [5, 13, 20, 26, 34, 39, 48, 83, 92, 94, 100]
+    other_package_dependencies = [18, 26, 34, 66, 75, 78, 88]
+    @test MetaheuristicsExercises.get_dependencies_used_by_package(context, 1) == first_package_dependencies
+    @test MetaheuristicsExercises.get_dependencies_used_by_package(context, 14) == other_package_dependencies
+
+    @test MetaheuristicsExercises.get_all_dependencies_used_dependencies(context, [1, 14]) == Set(vcat(first_package_dependencies, other_package_dependencies))
+
 end
+
