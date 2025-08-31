@@ -24,7 +24,7 @@ problem = make_problem_context_from_file(open("instance.txt"))
 solution = generate_random_greedy_initial_solution(problem, 0.3)
 ```
 """
-function generate_random_greedy_initial_solution(problem::ProblemContext, α::Integer)
+function generate_random_greedy_initial_solution(problem::ProblemContext, α::Real)
     @assert α <= 1 && α >= 0 "α ∈ [0, 1], got $(α)"
     cost = 0
     packages_heap = BinaryMaxHeap([(value, idx) for (idx, value) in enumerate(problem.package_scores)])
