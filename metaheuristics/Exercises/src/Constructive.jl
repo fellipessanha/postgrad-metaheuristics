@@ -1,9 +1,10 @@
 using DataStructures: BinaryMaxHeap
 
 @doc """
-    generate_random_greedy_initial_solution(problem::ProblemContext, α::Integer) -> Vector
+    # generate_random_greedy_initial_solution(problem::ProblemContext, α::Integer) -> Vector
 
 Generate an initial solution using a randomized greedy algorithm for the package selection problem.
+The generated solution will always follow the condition that `dependency_storage <= storage_size`
 
 # Arguments
 - `problem::ProblemContext`: The problem instance containing package scores, dependency weights, 
@@ -35,18 +36,18 @@ function generate_random_greedy_initial_solution(problem::ProblemContext, α::In
 
     initial_solution = Vector{Integer}()
     while !isempty(feasible_packages) && cost < problem.storage_size
-        chosen = rand(1:length(feasible_packages))
-        swapindex!(feasible_packages, chosen, length(feasible_packages))
-
-        v, idx = pop!(feasible_packages)
+        _value, idx = pop_random_item!(feasible_packages)
         new_dependencies = setdiff(get_dependencies_used_by_package(problem, idx), used_dependencies)
         cost += [problem.dependency_weights[i] for i in new_dependencies] |> sum
-        if cost <= problem.storage_size
-            union!(used_dependencies, new_dependencies)
-            push!(initial_solution, idx)
 
-            fill_feasible_package(feasible_packages, packages_heap, problem, α)
+        if cost > problem.storage_size
+            break
         end
+
+        union!(used_dependencies, new_dependencies)
+        push!(initial_solution, idx)
+
+        fill_feasible_package(feasible_packages, packages_heap, problem, α)
     end
 
     return initial_solution
@@ -72,4 +73,41 @@ end
 
 function swapindex!(arr::AbstractVector, i::Integer, j::Integer)
     arr[i], arr[j] = arr[j], arr[i]
+end
+
+@doc """
+# `pop_item_in_index!`
+removes item in position `index::Integer`, from `list::AbstractVector`.
+
+does this in `O(1)` execution time by swapping the specified item with the last intem in `list`,
+then performing `pop!` in `list`
+# Examples
+```jldoctest
+julia> v = [10, 20, 30, 40, 50]
+5-element Vector{Int64}:
+ 10
+ 20
+ 30
+ 40
+ 50
+
+julia> removed_item = pop_item_in_index!(v, 2)
+20
+
+julia> v
+4-element Vector{Int64}:
+ 10
+ 50
+ 30
+ 40
+```
+"""
+function pop_item_in_index!(list::AbstractVector, index::Integer)
+    swapindex!(list, index, length(list))
+    return pop!(list)
+end
+
+function pop_random_item!(list::AbstractVector)
+    index = rand(1:length(list))
+    return pop_item_in_index!(list, index)
 end
