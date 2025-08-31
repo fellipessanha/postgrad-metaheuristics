@@ -3,6 +3,7 @@ using Statistics
 using Test
 
 include("Utilities.jl")
+include("ConstructiveAnalysis.jl")
 
 test_instance_filepaths = get_instance_filepaths()
 
@@ -53,6 +54,20 @@ for instance in test_instance_filepaths
         random_evaluations = [evaluate(context, solution) for solution in random_solutions]
         @test evaluate(context, greedy_solutions[1]) >= mean([evaluate(context, solution) for solution in random_solutions])
         @info "greedy approach performs better than random, on average 🧮"
+    end
+
+    @testset "Constructive statistical analysis" begin
+        α_sample_size = 30.0
+        α_samples = [i / α_sample_size for i in 0:α_sample_size]
+        results = []
+        for α in α_samples
+            generator() = generate_random_greedy_initial_solution(context, α)
+            evaluator = solution -> evaluate(context, solution)
+            @time result = analyse_constructive_solution(generator, evaluator, 400)
+            push!(results, result)
+        end
+
+        @show results
     end
 
 end
