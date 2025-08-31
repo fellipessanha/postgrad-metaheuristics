@@ -1,4 +1,5 @@
 using MetaheuristicsExercises
+using Statistics
 using Test
 
 test_instances = ["prob-software-85-100-812-12180.txt"]
@@ -9,8 +10,11 @@ for instance in test_instance_filepaths
     context = MetaheuristicsExercises.make_problem_context_from_file(contents)
 
 
-    context_variables = [context.package_count, context.dependency_count, context.relation_count, context.storage_size]
-    summary = join(context_variables, '-')
+    package_count = context.package_count
+    dependency_count = context.dependency_count
+    relation_count = context.relation_count
+    storage_size = context.storage_size
+    summary = join([package_count, dependency_count, relation_count, storage_size], '-')
 
     @test occursin(summary, instance)
 
@@ -24,7 +28,25 @@ for instance in test_instance_filepaths
     # no oversize penalty
     @test MetaheuristicsExercises.evaluate(context, [1, 14]) > 0
     # with oversize penalty
-    @test MetaheuristicsExercises.evaluate(context, collect(1:30)) > 0
+    @test MetaheuristicsExercises.evaluate(context, collect(1:30)) < 0
+
+    @test_throws AssertionError MetaheuristicsExercises.generate_random_greedy_initial_solution(context, 2)
+    @info "threw successfully!"
+
+
+
+    greedy_solutions = [MetaheuristicsExercises.generate_greedy_initial_solution(context) for i in 1:30]
+    @test allequal(greedy_solutions)
+    @info "greedy solutions seem consistent ☑️"
+
+
+    random_solutions = [MetaheuristicsExercises.generate_random_initial_solution(context) for i in 1:30]
+    @test allunique(random_solutions)
+    @info "random solutions seem random 🤔"
+
+    random_evaluations = [evaluate(context, solution) for solution in random_solutions]
+    @test MetaheuristicsExercises.evaluate(context, greedy_solutions[1]) >= mean([evaluate(context, solution) for solution in random_solutions])
+    @info "greedy approach performs better than random, on average 🧮"
 
 end
 
