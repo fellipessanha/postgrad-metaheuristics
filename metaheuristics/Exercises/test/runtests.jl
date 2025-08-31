@@ -19,7 +19,7 @@ for instance in test_instance_filepaths
     @test MetaheuristicsExercises.get_dependencies_used_by_package(context, 1) == first_package_dependencies
     @test MetaheuristicsExercises.get_dependencies_used_by_package(context, 14) == other_package_dependencies
 
-    @test MetaheuristicsExercises.get_all_dependencies_used_dependencies(context, [1, 14]) == Set(vcat(first_package_dependencies, other_package_dependencies))
+    @test MetaheuristicsExercises.get_all_used_dependencies(context, [1, 14]) == Set(vcat(first_package_dependencies, other_package_dependencies))
 
     # no oversize penalty
     @test MetaheuristicsExercises.evaluate(context, [1, 14]) > 0
