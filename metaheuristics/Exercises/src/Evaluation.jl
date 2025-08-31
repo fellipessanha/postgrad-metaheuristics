@@ -27,7 +27,7 @@ function get_all_used_dependencies(problem::ProblemContext, solution::AbstractVe
     get_all_used_dependencies(problem, solution, Set{T}())
 end
 
-function Base.push!(set::Set{T}, values::AbstractVector{T}) where T
+function Base.push!(set::Set{T}, values::Vector{V}) where {T,V<:T}
     for value in values
         push!(set, value)
     end
