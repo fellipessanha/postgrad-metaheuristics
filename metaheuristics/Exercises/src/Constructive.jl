@@ -26,19 +26,19 @@ solution = generate_random_greedy_initial_solution(problem, 0.3)
 """
 function generate_random_greedy_initial_solution(problem::ProblemContext, α::Real)
     @assert α <= 1 && α >= 0 "α ∈ [0, 1], got $(α)"
-    cost = 0
-    packages_heap = BinaryMaxHeap([(value, idx) for (idx, value) in enumerate(problem.package_scores)])
+    cost              = 0
+    packages_heap     = BinaryMaxHeap([(value, idx) for (idx, value) in enumerate(problem.package_scores)])
     feasible_packages = Vector{Tuple{Integer,Integer}}()
     used_dependencies = Set{Integer}()
-    cost = 0
+    cost              = 0
 
     fill_feasible_package(feasible_packages, packages_heap, problem, α)
 
     initial_solution = Vector{Integer}()
     while !isempty(feasible_packages) && cost < problem.storage_size
-        _value, idx = pop_random_item!(feasible_packages)
+        _value, idx      = pop_random_item!(feasible_packages)
         new_dependencies = setdiff(get_dependencies_used_by_package(problem, idx), used_dependencies)
-        cost += [problem.dependency_weights[i] for i in new_dependencies] |> sum
+        cost             += [problem.dependency_weights[i] for i in new_dependencies] |> sum
 
         if cost > problem.storage_size
             break
@@ -61,11 +61,22 @@ function generate_greedy_initial_solution(problem::ProblemContext)
     generate_random_greedy_initial_solution(problem, 0)
 end
 
-function should_fill_feasible_package(feasible_package::AbstractVector, packages_heap::BinaryMaxHeap, problem::ProblemContext, α)
-    return !isempty(packages_heap) && (isempty(feasible_package) || length(feasible_package) / problem.package_count < α)
+function should_fill_feasible_package(
+    feasible_package::AbstractVector,
+    packages_heap::BinaryMaxHeap,
+    problem::ProblemContext,
+    α,
+)
+    return !isempty(packages_heap) &&
+           (isempty(feasible_package) || length(feasible_package) / problem.package_count < α)
 end
 
-function fill_feasible_package(feasible_package::AbstractVector, packages_heap::BinaryMaxHeap, problem::ProblemContext, α)
+function fill_feasible_package(
+    feasible_package::AbstractVector,
+    packages_heap::BinaryMaxHeap,
+    problem::ProblemContext,
+    α,
+)
     while should_fill_feasible_package(feasible_package, packages_heap, problem, α)
         pushfirst!(feasible_package, pop!(packages_heap))
     end

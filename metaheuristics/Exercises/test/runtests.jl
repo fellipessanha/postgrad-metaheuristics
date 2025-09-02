@@ -12,12 +12,11 @@ for instance in test_instance_filepaths
     contents = open(instance)
     context = make_problem_context_from_file(contents)
 
-
-    package_count = context.package_count
+    package_count    = context.package_count
     dependency_count = context.dependency_count
-    relation_count = context.relation_count
-    storage_size = context.storage_size
-    summary = join([package_count, dependency_count, relation_count, storage_size], '-')
+    relation_count   = context.relation_count
+    storage_size     = context.storage_size
+    summary          = join([package_count, dependency_count, relation_count, storage_size], '-')
 
     @testset "$(instance): input conforms to file `metadata`" begin
         @test occursin(summary, instance)
@@ -29,7 +28,8 @@ for instance in test_instance_filepaths
     @testset "$(instance): dependency fetch by package conforms to expected" begin
         @test get_dependencies_used_by_package(context, 1) == first_package_dependencies
         @test get_dependencies_used_by_package(context, 14) == other_package_dependencies
-        @test get_all_used_dependencies(context, [1, 14]) == Set(vcat(first_package_dependencies, other_package_dependencies))
+        @test get_all_used_dependencies(context, [1, 14]) ==
+              Set(vcat(first_package_dependencies, other_package_dependencies))
     end
 
     @testset "$(instance): evaluation penalty is working" begin
@@ -47,13 +47,13 @@ for instance in test_instance_filepaths
         @test allequal(greedy_solutions)
         @info "greedy solutions seem consistent ☑️"
 
-
         random_solutions = [generate_random_initial_solution(context) for i in 1:30]
         @test allunique(random_solutions)
         @info "random solutions seem random 🤔"
 
         random_evaluations = [evaluate(context, solution) for solution in random_solutions]
-        @test evaluate(context, greedy_solutions[1]) >= mean([evaluate(context, solution) for solution in random_solutions])
+        @test evaluate(context, greedy_solutions[1]) >=
+              mean([evaluate(context, solution) for solution in random_solutions])
         @info "greedy approach performs better than random, on average 🧮"
     end
 end

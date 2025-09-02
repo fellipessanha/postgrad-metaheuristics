@@ -1,5 +1,6 @@
-function make_problem_context_from_file(contents::IOStream, penalty_cost=9999)
-    package_count, dependency_count, relation_count, storage_size = map(entry -> parse(Int, entry), contents |> readline |> split)
+function make_problem_context_from_file(contents::IOStream, penalty_cost = 9999)
+    package_count, dependency_count, relation_count, storage_size =
+        map(entry -> parse(Int, entry), contents |> readline |> split)
     @info "package_count: $(package_count), dependency_count: $(dependency_count),\
     relation_count: $(relation_count), storage_size: $(storage_size)"
 
@@ -21,7 +22,6 @@ function make_problem_context_from_file(contents::IOStream, penalty_cost=9999)
     end
     @assert count(dependency_matrix) == relation_count
 
-
     return ProblemContext(
         package_count,
         dependency_count,
@@ -30,7 +30,7 @@ function make_problem_context_from_file(contents::IOStream, penalty_cost=9999)
         package_scores,
         dependency_weights,
         storage_size,
-        dependency_matrix
+        dependency_matrix,
     )
 end
 

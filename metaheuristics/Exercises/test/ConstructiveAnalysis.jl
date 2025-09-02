@@ -2,15 +2,13 @@ using BenchmarkTools
 using Statistics
 using MetaheuristicsExercises
 
-function analyse_constructive_solution(generator::Function, evaluator::Function, sample_size=30)
+function analyse_constructive_solution(generator::Function, evaluator::Function, sample_size = 30)
     generated_solutions, elapsed_time, _ = @btimed [$generator() for _ in 1:$sample_size] evals = 30
-    evaluations = [evaluator(solution) for solution in generated_solutions]
-
-    mean = Statistics.mean(evaluations)
-    std = Statistics.std(evaluations)
+    evaluations                          = [evaluator(solution) for solution in generated_solutions]
+    mean                                 = Statistics.mean(evaluations)
+    std                                  = Statistics.std(evaluations)
 
     return generated_solutions, mean, std, elapsed_time
-
 end
 
 function run_constructive_analysis(context::ProblemContext)
@@ -19,8 +17,9 @@ function run_constructive_analysis(context::ProblemContext)
     results = []
     for α in α_samples
         generator() = generate_random_greedy_initial_solution(context, α)
-        evaluator = solution -> evaluate(context, solution)
-        result = analyse_constructive_solution(generator, evaluator, 30)
+        evaluator   = solution -> evaluate(context, solution)
+        result      = analyse_constructive_solution(generator, evaluator, 30)
+
         @info "α=$(α) ran in $(result[2])s"
         push!(results, result)
     end
