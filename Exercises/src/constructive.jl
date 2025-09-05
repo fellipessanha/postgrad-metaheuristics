@@ -24,7 +24,7 @@ problem = make_problem_context_from_file(open("instance.txt"))
 solution = generate_random_greedy_initial_solution(problem, 0.3)
 ```
 """
-function generate_random_greedy_initial_solution(problem::ProblemContext, α::Real)
+function generate_random_greedy_initial_solution(problem::ProblemContext, α::Real)::Solution
     @assert α <= 1 && α >= 0 "α ∈ [0, 1], got $(α)"
     cost              = 0
     packages_heap     = BinaryMaxHeap([(value, idx) for (idx, value) in enumerate(problem.package_scores)])
@@ -50,14 +50,14 @@ function generate_random_greedy_initial_solution(problem::ProblemContext, α::Re
         fill_feasible_package(feasible_packages, packages_heap, problem, α)
     end
 
-    return initial_solution
+    return Solution(initial_solution, used_dependencies)
 end
 
-function generate_random_initial_solution(problem::ProblemContext)
+function generate_random_initial_solution(problem::ProblemContext)::Solution
     generate_random_greedy_initial_solution(problem, 1)
 end
 
-function generate_greedy_initial_solution(problem::ProblemContext)
+function generate_greedy_initial_solution(problem::ProblemContext)::Solution
     generate_random_greedy_initial_solution(problem, 0)
 end
 
