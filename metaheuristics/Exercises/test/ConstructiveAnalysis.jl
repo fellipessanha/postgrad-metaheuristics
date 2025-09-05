@@ -26,3 +26,25 @@ function run_constructive_analysis(context::ProblemContext)
 
     @show results
 end
+
+function normalize_vector(array::AbstractArray)
+    return [element/max(array) for element in array]
+end
+
+
+
+function plot_constructive_analysis(test_results::AbstractVector, output_name="constructive_analysis_output")
+	times = [result[2]/max(resul) for result in test_results] |> normalize_vector
+	means = [result[3] for result in test_results] |> normalize_vector
+	stds = [result[4] for result in test_results] |> normalize_vector
+
+    
+	myplot = plot(
+        [i/30 for i in 0:30],
+        [times means stds],
+        label=["times" "means" "stds"],
+        ylabel="relative (%)", xlabel="α ∈ [0,1]"
+    )
+
+    savefig(myplot)
+end
