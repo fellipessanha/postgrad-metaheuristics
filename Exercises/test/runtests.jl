@@ -55,5 +55,15 @@ for instance in test_instance_filepaths
         @test evaluate(context, greedy_solutions[1]) >=
               mean([evaluate(context, solution) for solution in random_solutions])
         @info "greedy approach performs better than random, on average 🧮"
+
+        check_solution = random_solutions[1]
+
+        used_package = check_solution.used_packages[1]
+        @test evaluate(context, check_solution, MetaheuristicsExercises.AddPackageMove(used_package)) == 0
+        @info "AddPackageMove with used index did not increase cost 0️⃣"
+    
+        unused_package = setdiff(collect(1:dependency_count), check_solution.used_dependencies)[1]
+        @test evaluate(context, check_solution, MetaheuristicsExercises.AddPackageMove(unused_package)) > 0
+        @info "AddPackageMove with used index did not increase cost ➕"
     end
 end
