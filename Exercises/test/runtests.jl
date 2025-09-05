@@ -44,11 +44,11 @@ for instance in test_instance_filepaths
         @info "threw successfully!"
 
         greedy_solutions = [generate_greedy_initial_solution(context) for i in 1:30]
-        @test allequal(greedy_solutions)
+        @test allequal([solution.used_packages for solution in  greedy_solutions])
         @info "greedy solutions seem consistent ☑️"
 
         random_solutions = [generate_random_initial_solution(context) for i in 1:30]
-        @test allunique(random_solutions)
+        @test allunique([solution.used_packages for solution in  random_solutions])
         @info "random solutions seem random 🤔"
 
         random_evaluations = [evaluate(context, solution) for solution in random_solutions]
