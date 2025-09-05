@@ -12,4 +12,5 @@ end
 struct Solution
     used_packages::AbstractArray{Integer}
     used_dependencies::AbstractSet{Integer}
+    cost::Integer
 end

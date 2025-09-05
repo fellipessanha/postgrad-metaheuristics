@@ -50,7 +50,7 @@ function generate_random_greedy_initial_solution(problem::ProblemContext, α::Re
         fill_feasible_package(feasible_packages, packages_heap, problem, α)
     end
 
-    return Solution(initial_solution, used_dependencies)
+    return Solution(initial_solution, used_dependencies, cost)
 end
 
 function generate_random_initial_solution(problem::ProblemContext)::Solution
