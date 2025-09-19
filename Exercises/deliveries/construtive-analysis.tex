@@ -61,22 +61,23 @@ The results of the analysis, normalized in \% values, can be seen in Figure~\ref
 \begin{figure}[!ht]
     \centering
     \includegraphics[width=0.7\textwidth]{../simple_constructive_analysis.png}
-    \caption{mean solution quality, standar deviation, and time elapsed by $\alpha$}
+    \caption{mean solution quality, standard deviation, and time elapsed by $\alpha$}
     \label{fig:results}
 \end{figure}
 
-In it, we can see the impact of the parameter $\alpha$ on the solution quality -- which is higher
-but less diverse -- in the lower\($<0.05$\) ranges. As $\alpha$ increases, solution quality 
-and standard deviation plateaus, and the time elapsed decreases in a manner that can be interpreted
-as linear logarithmic, as the algorithm complexity suggested previously. 
+We can see in our plots that the execution time, aside from some noise and outliers, is mostly 
+consistent during the entire range of $\alpha$ values, with a slight trend upwards as $\alpha$
+increases. The standard deviation also seems mostly regular for $\alpha \in [0.1, 1]$, and the mean
+value of the solutions consistently decreases as $\alpha$ increases, with the purely random
+constructor ($\alpha = 1$) performing at about 50\% of the greedy constructor ($\alpha = 0$).
 
 \section{Conclusion}
 % Summarize your findings and any insights.
 
-With the results in hand, we can conclude that very low values of $\alpha$ have the benefit of
-providing extremely consistent, high value solutions, which can be useful in certain scenarios but,
-whenever solution diversity is required, values of $\alpha \in [0.75, 1]$ should be prefereed, as
-they will be slightly more performant, while still maintaining a similar mean solution quality and 
-standard deviation.
+With the results in hand, we can conclude that, outside of a small range of small $\alpha$, our
+constructor behaves consistently, having a standard deviation of a mostly random sample of values.
 
+Knowing that $\alpha$ has very little impact on the execution time, we can also conclude that
+the choice of $\alpha$ can be manipulated to achieve the desired balance of solution quality
+and variety, and that values with $\alpha \in [0.3, 0.6]$ seem to be a good sweet spot.
 \end{document}
