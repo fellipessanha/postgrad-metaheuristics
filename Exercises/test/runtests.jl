@@ -4,7 +4,6 @@ using Statistics
 using Test
 
 include("utilities.jl")
-include("constructive_analysis.jl")
 
 test_instance_filepaths = get_instance_filepaths()
 

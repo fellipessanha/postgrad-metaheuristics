@@ -1,14 +1,18 @@
 using BenchmarkTools
 using Statistics
 using MetaheuristicsExercises
+using Plots
+
+include("utilities.jl")
 
 function analyse_constructive_solution(generator::Function, evaluator::Function, sample_size = 30)
     generated_solutions, elapsed_time, _ = @btimed [$generator() for _ in 1:$sample_size] evals = 30
     evaluations                          = [evaluator(solution) for solution in generated_solutions]
     mean                                 = Statistics.mean(evaluations)
     std                                  = Statistics.std(evaluations)
+    minimum                              = Statistics.minimum(evaluations)
 
-    return generated_solutions, mean, std, elapsed_time
+    return generated_solutions, mean, std, elapsed_time, minimum
 end
 
 function run_constructive_analysis(context::ProblemContext)
@@ -25,26 +29,39 @@ function run_constructive_analysis(context::ProblemContext)
     end
 
     @show results
+    return results
 end
 
 function normalize_vector(array::AbstractArray)
-    return [element/max(array) for element in array]
+    return [element/maximum(array) for element in array]
 end
 
-
-
 function plot_constructive_analysis(test_results::AbstractVector, output_name="constructive_analysis_output")
-	times = [result[2]/max(resul) for result in test_results] |> normalize_vector
-	means = [result[3] for result in test_results] |> normalize_vector
-	stds = [result[4] for result in test_results] |> normalize_vector
+	means   = [result[2] for result in test_results] |> normalize_vector
+	stds    = [result[3] for result in test_results] |> normalize_vector
+	times   = [result[4] for result in test_results] |> normalize_vector
+	minimum = [result[5] for result in test_results] |> normalize_vector
 
-    
+    n = length(test_results)
 	myplot = plot(
-        [i/30 for i in 0:30],
-        [times means stds],
-        label=["times" "means" "stds"],
+        [i/n for i in 1:n],
+        [times means stds minimum],
+        label=["times" "means" "stds" "minimum"],
         ylabel="relative (%)", xlabel="α ∈ [0,1]"
     )
 
-    savefig(myplot)
+    savefig(myplot, output_name)
+end
+
+function main()
+    instance = (get_instance_filepaths() |> collect)[1]
+    
+    instance |> open |>
+        make_problem_context_from_file |>
+        run_constructive_analysis |>
+        plot_constructive_analysis
+end
+
+if abspath(PROGRAM_FILE) == @__FILE__
+    main()
 end
