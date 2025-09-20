@@ -10,7 +10,7 @@ struct ProblemContext
 end
 
 struct Solution
-    used_packages::AbstractArray{Integer}
-    used_dependencies::AbstractDict{Integer}
+    used_packages::AbstractSet{Integer}
+    used_dependencies::AbstractDict{Integer,AbstractSet{Integer}}
     cost::Integer
 end

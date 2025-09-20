@@ -34,7 +34,7 @@ function generate_random_greedy_initial_solution(problem::ProblemContext, α::Re
 
     fill_feasible_package(feasible_packages, packages_heap, problem, α)
 
-    initial_solution = Vector{Integer}()
+    initial_solution = Set{Integer}()
     while !isempty(feasible_packages) && cost < problem.storage_size
         _value, idx      = pop_random_item!(feasible_packages)
         new_dependencies = setdiff(get_dependencies_used_by_package(problem, idx), used_dependencies)

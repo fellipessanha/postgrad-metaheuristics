@@ -1,4 +1,4 @@
-function evaluate(problem::ProblemContext, solution::AbstractVector{T}) where {T<:Integer}
+function evaluate(problem::ProblemContext, solution::AbstractSet{T}) where {T<:Integer}
     score            = [problem.package_scores[i] for i in solution] |> sum
     dependencies     = get_all_used_dependencies(problem, solution)
     cost             = [problem.dependency_weights[i] for i in dependencies] |> sum
@@ -78,7 +78,7 @@ end
 
 function get_all_used_dependencies!(
     problem::ProblemContext,
-    solution::AbstractVector{T},
+    solution::AbstractSet{T},
     current_set::AbstractSet{T},
 ) where {T<:Integer}
     foldl(solution; init = current_set) do set, package
@@ -89,7 +89,7 @@ function get_all_used_dependencies!(
     end
 end
 
-function get_all_used_dependencies(problem::ProblemContext, solution::AbstractVector{T}) where {T<:Integer}
+function get_all_used_dependencies(problem::ProblemContext, solution::AbstractSet{T}) where {T<:Integer}
     get_all_used_dependencies!(problem, solution, Set{T}())
 end
 
