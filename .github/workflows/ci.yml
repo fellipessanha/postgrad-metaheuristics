@@ -5,28 +5,38 @@ on:
   pull_request:
     types: [opened, synchronize, reopened]
 jobs:
-  test:
-    name: Julia ${{ matrix.version }} - ${{ matrix.os }} - ${{ matrix.arch }} - ${{ github.event_name }}
-    runs-on: ${{ matrix.os }}
-    strategy:
-      fail-fast: false
-      matrix:
-        version:
-          - '1.11'
-        os:
-          - ubuntu-latest
-        arch:
-          - x64
+  formatter:
+    name: Run CI
+    runs-on: ubuntu-latest
     defaults:
       run:
         working-directory: ./Exercises
     steps:
-      - uses: actions/checkout@v4
-      - uses: julia-actions/setup-julia@v2
+      - uses: julia-actions/setup-julia@latest
         with:
-          version: ${{ matrix.version }}
-          arch: ${{ matrix.arch }}
-      - uses: julia-actions/cache@v2
-      - uses: julia-actions/julia-buildpkg@v1
-      - uses: julia-actions/julia-runtest@v1
+          version: '1'
+      - uses: actions/checkout@v4
+      - name: Format check
+        shell: julia --color=yes {0}
+        run: |
+          using Pkg
+          # If you update the version, also update the style guide docs.
+          Pkg.add(PackageSpec(name="JuliaFormatter", version="1"))
+          using JuliaFormatter
+          # print used options for debugging
+          JuliaFormatter.Options() |> dump |> println
+          needs_formatting = format(".", verbose=true)
+          if needs_formatting == 0
+              exit(0)
+          end
+          @error "Some files have not been formatted !!!"
+          out = `git diff` |> Cmd |> read |> String
+          write(stdout, out)
+          exit(1)
+      - name: Test check
+        shell: julia --color=yes {0}
+        run: |
+          using Pkg
+          Pkg.add("Test")
+          Pkg.test(;coverage=true)
 
