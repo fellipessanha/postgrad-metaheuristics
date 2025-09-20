@@ -50,6 +50,23 @@ function evaluate(problem::ProblemContext, solution::Solution, move::AddPackageM
     return problem.package_scores[move.package] - penalty_cost
 end
 
+function get_removed_dependencies_by_package(
+    dependency_dict::AbstractDict{Integer,AbstractSet{Integer}},
+    package::Integer,
+)
+    to_remove = Set{Integer}()
+    for (dependency, packages) in dependency_dict
+        if package in packages && length(packages) == 1
+            union!(to_remove, dependency)
+        end
+    end
+    return to_remove
+end
+
+function get_removed_dependencies_by_package(solution::Solution, package::Integer)
+    return get_removed_dependencies_by_package(solution.used_dependencies, package)
+end
+
 function get_dependencies_used_by_package(dependency_matrix::Matrix{Bool}, package::Integer)::AbstractVector{Integer}
     package_dependencies = dependency_matrix[package, :]
     return [idx for (idx, is_used) in enumerate(package_dependencies) if is_used]
