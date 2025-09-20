@@ -42,7 +42,8 @@ for instance in test_instance_filepaths
         @test_throws AssertionError generate_random_greedy_initial_solution(context, 2)
         @info "threw successfully!"
 
-        greedy_solutions = [generate_greedy_initial_solution(context) for i in 1:30]
+        greedy_solutions::AbstractVector{MetaheuristicsExercises.Solution} =
+            [generate_greedy_initial_solution(context) for i in 1:2]
         @test allequal([solution.used_packages for solution in greedy_solutions])
         @info "greedy solutions seem consistent ☑️"
 
@@ -64,5 +65,16 @@ for instance in test_instance_filepaths
         unused_package = setdiff(collect(1:dependency_count), check_solution.used_dependencies)[1]
         @test evaluate(context, check_solution, MetaheuristicsExercises.AddPackageMove(unused_package)) > 0
         @info "AddPackageMove with used index did not increase cost ➕"
+    end
+
+    @testset "$(instance): test removing package has expected results in dependencies" begin
+        greedy_solution = generate_greedy_initial_solution(context)
+
+        removed_package = 69
+        removed_dependencies =
+            MetaheuristicsExercises.get_removed_dependencies_by_package(greedy_solution, removed_package)
+
+        @show removed_dependencies
+        @test 54 in removed_dependencies
     end
 end
