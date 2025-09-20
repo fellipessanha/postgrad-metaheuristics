@@ -41,9 +41,12 @@ function evaluate(problem::ProblemContext, solution::Solution, move::AddPackageM
         return 0
     end
 
-    new_dependencies = setdiff(get_dependencies_used_by_package(problem, move.package), solution.used_dependencies)
-    additional_cost  = [problem.dependency_weights[dependency] for dependency in new_dependencies] |> sum
-    penalty_cost     = (solution.cost <= problem.storage_size ? calculate_solution_oversize_penalty(problem, solution.cost + additional_cost) : 0)
+    new_dependencies =
+        setdiff(get_dependencies_used_by_package(problem, move.package), keys(solution.used_dependencies))
+    additional_cost = [problem.dependency_weights[dependency] for dependency in new_dependencies] |> sum
+    penalty_cost =
+        solution.cost <= problem.storage_size ?
+        calculate_solution_oversize_penalty(problem, solution.cost + additional_cost) : 0
     return problem.package_scores[move.package] - penalty_cost
 end
 
@@ -59,7 +62,7 @@ end
 function get_all_used_dependencies!(
     problem::ProblemContext,
     solution::AbstractVector{T},
-    current_set::Set{T},
+    current_set::AbstractSet{T},
 ) where {T<:Integer}
     foldl(solution; init = current_set) do set, package
         for value in get_dependencies_used_by_package(problem, package)
