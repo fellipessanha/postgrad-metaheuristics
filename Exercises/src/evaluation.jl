@@ -43,11 +43,7 @@ function evaluate(problem::ProblemContext, solution::Solution, move::AddPackageM
 
     new_dependencies = setdiff(get_dependencies_used_by_package(problem, move.package), solution.used_dependencies)
     additional_cost  = [problem.dependency_weights[dependency] for dependency in new_dependencies] |> sum
-    penalty_cost = (
-        solution.cost <= problem.storage_size 
-        ? calculate_solution_oversize_penalty(problem, solution.cost + additional_cost)
-        : 0
-    )
+    penalty_cost     = (solution.cost <= problem.storage_size ? calculate_solution_oversize_penalty(problem, solution.cost + additional_cost) : 0)
     return problem.package_scores[move.package] - penalty_cost
 end
 

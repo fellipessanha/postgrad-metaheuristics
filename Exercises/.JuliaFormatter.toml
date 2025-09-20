@@ -1,7 +1,6 @@
 align_assignment      = true
 align_pair_arrow      = true
 align_matrix          = true
-align_eq
 always_for_in         = true
 remove_extra_newlines = true
 margin                = 120
