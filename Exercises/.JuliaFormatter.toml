@@ -1,4 +1,5 @@
 align_assignment      = true
+align_conditional     = true
 align_pair_arrow      = true
 align_matrix          = true
 always_for_in         = true

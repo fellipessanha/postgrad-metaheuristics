@@ -43,11 +43,11 @@ for instance in test_instance_filepaths
         @info "threw successfully!"
 
         greedy_solutions = [generate_greedy_initial_solution(context) for i in 1:30]
-        @test allequal([solution.used_packages for solution in  greedy_solutions])
+        @test allequal([solution.used_packages for solution in greedy_solutions])
         @info "greedy solutions seem consistent ☑️"
 
         random_solutions = [generate_random_initial_solution(context) for i in 1:30]
-        @test allunique([solution.used_packages for solution in  random_solutions])
+        @test allunique([solution.used_packages for solution in random_solutions])
         @info "random solutions seem random 🤔"
 
         random_evaluations = [evaluate(context, solution) for solution in random_solutions]
@@ -60,7 +60,7 @@ for instance in test_instance_filepaths
         used_package = check_solution.used_packages[1]
         @test evaluate(context, check_solution, MetaheuristicsExercises.AddPackageMove(used_package)) == 0
         @info "AddPackageMove with used index did not increase cost 0️⃣"
-    
+
         unused_package = setdiff(collect(1:dependency_count), check_solution.used_dependencies)[1]
         @test evaluate(context, check_solution, MetaheuristicsExercises.AddPackageMove(unused_package)) > 0
         @info "AddPackageMove with used index did not increase cost ➕"
