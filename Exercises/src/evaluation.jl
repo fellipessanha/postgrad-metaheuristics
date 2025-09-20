@@ -11,27 +11,27 @@ function evaluate(problem::ProblemContext, solution::Solution)
     evaluate(problem, solution.used_packages)
 end
 
-@doc"""
-    Evaluate a solution after applying a move.
+@doc """
+     Evaluate a solution after applying a move.
 
-    # Arguments
-    - `problem::ProblemContext`: The problem context.
-    - `solution::Solution`: The current solution.
-    - `move::Move`: The move to be applied.
+     # Arguments
+     - `problem::ProblemContext`: The problem context.
+     - `solution::Solution`: The current solution.
+     - `move::Move`: The move to be applied.
 
-    # Returns
-    - `score::Integer`: The relative score of the new solution after applying the move.
+     # Returns
+     - `score::Integer`: The relative score of the new solution after applying the move.
 
-    # Example
-    ```jldoctest
-    julia> new_score = evaluate(problem, current_solution, move)
-    -42
-    # move makes solution worse by 42 points
-    julia> new_score = evaluate(problem, current_solution, move)
-    13
-    # move makes solution better by 13 points
-    ```
-"""
+     # Example
+     ```jldoctest
+     julia> new_score = evaluate(problem, current_solution, move)
+     -42
+     # move makes solution worse by 42 points
+     julia> new_score = evaluate(problem, current_solution, move)
+     13
+     # move makes solution better by 13 points
+     ```
+ """
 function evaluate(problem::ProblemContext, solution::Solution, move::Move)
     @error("Not implemented for current move")
 end
