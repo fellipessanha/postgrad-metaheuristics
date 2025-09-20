@@ -11,27 +11,27 @@ function evaluate(problem::ProblemContext, solution::Solution)
     evaluate(problem, solution.used_packages)
 end
 
-@doc"""
-    Evaluate a solution after applying a move.
+@doc """
+     Evaluate a solution after applying a move.
 
-    # Arguments
-    - `problem::ProblemContext`: The problem context.
-    - `solution::Solution`: The current solution.
-    - `move::Move`: The move to be applied.
+     # Arguments
+     - `problem::ProblemContext`: The problem context.
+     - `solution::Solution`: The current solution.
+     - `move::Move`: The move to be applied.
 
-    # Returns
-    - `score::Integer`: The relative score of the new solution after applying the move.
+     # Returns
+     - `score::Integer`: The relative score of the new solution after applying the move.
 
-    # Example
-    ```jldoctest
-    julia> new_score = evaluate(problem, current_solution, move)
-    -42
-    # move makes solution worse by 42 points
-    julia> new_score = evaluate(problem, current_solution, move)
-    13
-    # move makes solution better by 13 points
-    ```
-"""
+     # Example
+     ```jldoctest
+     julia> new_score = evaluate(problem, current_solution, move)
+     -42
+     # move makes solution worse by 42 points
+     julia> new_score = evaluate(problem, current_solution, move)
+     13
+     # move makes solution better by 13 points
+     ```
+ """
 function evaluate(problem::ProblemContext, solution::Solution, move::Move)
     @error("Not implemented for current move")
 end
@@ -47,7 +47,7 @@ function evaluate(problem::ProblemContext, solution::Solution, move::AddPackageM
     return problem.package_scores[move.package] - penalty_cost
 end
 
-function get_dependencies_used_by_package(dependency_matrix::Matrix{Bool}, package::Integer)
+function get_dependencies_used_by_package(dependency_matrix::Matrix{Bool}, package::Integer)::AbstractVector{Integer}
     package_dependencies = dependency_matrix[package, :]
     return [idx for (idx, is_used) in enumerate(package_dependencies) if is_used]
 end
@@ -62,7 +62,9 @@ function get_all_used_dependencies!(
     current_set::Set{T},
 ) where {T<:Integer}
     foldl(solution; init = current_set) do set, package
-        push!(set, get_dependencies_used_by_package(problem, package))
+        for value in get_dependencies_used_by_package(problem, package)
+            push!(set, value)
+        end
         return set
     end
 end
@@ -77,11 +79,4 @@ end
 
 function calculate_solution_oversize_penalty(problem::ProblemContext, cost::Integer)
     return cost > problem.storage_size ? problem.penalty_cost : 0
-end
-
-function Base.push!(set::Set{T}, values::Vector{V}) where {T,V<:T}
-    for value in values
-        push!(set, value)
-    end
-    return set
 end

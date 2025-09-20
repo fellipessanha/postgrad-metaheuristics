@@ -29,7 +29,7 @@ function generate_random_greedy_initial_solution(problem::ProblemContext, α::Re
     cost              = 0
     packages_heap     = BinaryMaxHeap([(value, idx) for (idx, value) in enumerate(problem.package_scores)])
     feasible_packages = Vector{Tuple{Integer,Integer}}()
-    used_dependencies = Set{Integer}()
+    used_dependencies = Dict{Integer,AbstractSet{Integer}}()
     cost              = 0
 
     fill_feasible_package(feasible_packages, packages_heap, problem, α)
@@ -44,13 +44,28 @@ function generate_random_greedy_initial_solution(problem::ProblemContext, α::Re
             break
         end
 
-        union!(used_dependencies, new_dependencies)
+        add_dependencies_to_dependency_map!(
+            used_dependencies,
+            Dict{Integer,AbstractVector{Integer}}(idx => new_dependencies),
+        )
         push!(initial_solution, idx)
 
         fill_feasible_package(feasible_packages, packages_heap, problem, α)
     end
 
     return Solution(initial_solution, used_dependencies, cost)
+end
+
+function add_dependencies_to_dependency_map!(
+    used_dependencies::AbstractDict{Integer,AbstractSet{Integer}},
+    new_dependencies::AbstractDict{Integer,AbstractVector{Integer}},
+)
+    for (package, dependencies) in new_dependencies
+        for dependency in dependencies
+            current_packages = get(used_dependencies, dependency, Set{Integer}())
+            used_dependencies[dependency] = union(current_packages, package)
+        end
+    end
 end
 
 function generate_random_initial_solution(problem::ProblemContext)::Solution
