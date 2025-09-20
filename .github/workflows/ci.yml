@@ -8,7 +8,9 @@ jobs:
   formatter:
     name: Run Formatter
     runs-on: ubuntu-latest
-    working-directory: ./Exercises
+    defaults:
+      run:
+        working-directory: ./Exercises
     steps:
       - uses: julia-actions/setup-julia@latest
         with:
