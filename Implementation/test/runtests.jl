@@ -45,10 +45,12 @@ for instance in test_instance_filepaths
         greedy_solutions::AbstractVector{MetaheuristicsExercises.Solution} =
             [generate_greedy_initial_solution(context) for i in 1:2]
         @test allequal([solution.used_packages for solution in greedy_solutions])
+        @test all([solution.weight <= context.storage_size for solution in greedy_solutions])
         @info "greedy solutions seem consistent ☑️"
 
         random_solutions = [generate_random_initial_solution(context) for i in 1:30]
         @test allunique([solution.used_packages for solution in random_solutions])
+        @test all([solution.weight <= context.storage_size for solution in random_solutions])
         @info "random solutions seem random 🤔"
 
         random_evaluations = [evaluate(context, solution) for solution in random_solutions]
@@ -84,7 +86,7 @@ for instance in test_instance_filepaths
             remove_score_diff = evaluate(context, greedy_solution, remove_move)
             @test remove_score_diff < 0
 
-            removed_solution = MetaheuristicsExercises.apply(context, greedy_solution, remove_move)
+            removed_solution = MetaheuristicsExercises.apply(context, copy(greedy_solution), remove_move)
             @test greedy_evaluation + remove_score_diff == evaluate(context, removed_solution)
 
             readd_move       = MetaheuristicsExercises.AddPackageMove(package)
