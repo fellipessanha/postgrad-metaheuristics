@@ -11,3 +11,6 @@ end
 struct FlipPackageMove <: Move
     package::Integer
 end
+
+include("evaluate.jl")
+include("apply.jl")
