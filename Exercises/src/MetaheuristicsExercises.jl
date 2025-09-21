@@ -4,6 +4,7 @@ include("problem_context.jl")
 include("parsing.jl")
 include("moves.jl")
 include("evaluation.jl")
+include("apply_moves.jl")
 include("constructive.jl")
 
 export ProblemContext, make_problem_context_from_file, get_dependencies_used_by_package

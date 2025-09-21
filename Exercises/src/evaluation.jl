@@ -1,4 +1,4 @@
-function evaluate(problem::ProblemContext, solution::AbstractVector{T}) where {T<:Integer}
+function evaluate(problem::ProblemContext, solution::AbstractSet{T}) where {T<:Integer}
     score            = [problem.package_scores[i] for i in solution] |> sum
     dependencies     = get_all_used_dependencies(problem, solution)
     cost             = [problem.dependency_weights[i] for i in dependencies] |> sum
@@ -41,10 +41,39 @@ function evaluate(problem::ProblemContext, solution::Solution, move::AddPackageM
         return 0
     end
 
-    new_dependencies = setdiff(get_dependencies_used_by_package(problem, move.package), solution.used_dependencies)
-    additional_cost  = [problem.dependency_weights[dependency] for dependency in new_dependencies] |> sum
-    penalty_cost     = (solution.cost <= problem.storage_size ? calculate_solution_oversize_penalty(problem, solution.cost + additional_cost) : 0)
+    new_dependencies =
+        setdiff(get_dependencies_used_by_package(problem, move.package), keys(solution.used_dependencies))
+    additional_weight = [problem.dependency_weights[dependency] for dependency in new_dependencies] |> sum
+    penalty_cost = calculate_solution_oversize_penalty(problem, solution.weight + additional_weight)
     return problem.package_scores[move.package] - penalty_cost
+end
+
+function evaluate(problem::ProblemContext, solution::Solution, move::RemovePackageMove)
+    if !(move.package in solution.used_packages)
+        return 0
+    end
+
+    removed_dependencies = get_removed_dependencies_by_package(solution, move.package)
+    removed_weight = [problem.dependency_weights[dependency] for dependency in removed_dependencies] |> sum
+    penalty_cost = calculate_solution_oversize_penalty(problem, solution.weight - removed_weight)
+    return -(problem.package_scores[move.package] - penalty_cost)
+end
+
+function get_removed_dependencies_by_package(
+    dependency_dict::AbstractDict{Integer,AbstractSet{Integer}},
+    package::Integer,
+)
+    to_remove = Set{Integer}()
+    for (dependency, packages) in dependency_dict
+        if package in packages && length(packages) == 1
+            union!(to_remove, dependency)
+        end
+    end
+    return to_remove
+end
+
+function get_removed_dependencies_by_package(solution::Solution, package::Integer)
+    return get_removed_dependencies_by_package(solution.used_dependencies, package)
 end
 
 function get_dependencies_used_by_package(dependency_matrix::Matrix{Bool}, package::Integer)::AbstractVector{Integer}
@@ -58,8 +87,8 @@ end
 
 function get_all_used_dependencies!(
     problem::ProblemContext,
-    solution::AbstractVector{T},
-    current_set::Set{T},
+    solution::AbstractSet{T},
+    current_set::AbstractSet{T},
 ) where {T<:Integer}
     foldl(solution; init = current_set) do set, package
         for value in get_dependencies_used_by_package(problem, package)
@@ -69,7 +98,7 @@ function get_all_used_dependencies!(
     end
 end
 
-function get_all_used_dependencies(problem::ProblemContext, solution::AbstractVector{T}) where {T<:Integer}
+function get_all_used_dependencies(problem::ProblemContext, solution::AbstractSet{T}) where {T<:Integer}
     get_all_used_dependencies!(problem, solution, Set{T}())
 end
 
@@ -77,6 +106,6 @@ function get_all_used_dependencies(problem::ProblemContext, solution::Solution)
     get_all_used_dependencies(problem, solution.used_packages)
 end
 
-function calculate_solution_oversize_penalty(problem::ProblemContext, cost::Integer)
-    return cost > problem.storage_size ? problem.penalty_cost : 0
+function calculate_solution_oversize_penalty(problem::ProblemContext, weight::Integer)
+    return weight > problem.storage_size ? problem.penalty_cost : 0
 end
