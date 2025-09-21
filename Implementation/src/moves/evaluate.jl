@@ -45,3 +45,10 @@ function evaluate(problem::ProblemContext, solution::Solution, move::RemovePacka
     penalty_cost = calculate_solution_oversize_penalty(problem, solution.weight - removed_weight)
     return -(problem.package_scores[move.package] - penalty_cost)
 end
+
+function evaluate(problem::ProblemContext, solution::Solution, move::FlipPackageMove)
+    if move.package in solution.used_packages
+        return evaluate(problem, solution, RemovePackageMove(move.package))
+    end
+    return evaluate(problem, solution, AddPackageMove(move.package))
+end
