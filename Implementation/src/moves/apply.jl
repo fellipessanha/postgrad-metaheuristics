@@ -1,4 +1,4 @@
-function apply(problem::ProblemContext, solution::Solution, move::RemovePackageMove)
+function apply!(problem::ProblemContext, solution::Solution, move::RemovePackageMove)
     if !(move.package in solution.used_packages)
         return solution
     end
@@ -20,7 +20,7 @@ function apply(problem::ProblemContext, solution::Solution, move::RemovePackageM
     return solution
 end
 
-function apply(problem::ProblemContext, solution::Solution, move::AddPackageMove)
+function apply!(problem::ProblemContext, solution::Solution, move::AddPackageMove)
     if move.package in solution.used_packages
         return solution
     end
@@ -40,9 +40,9 @@ function apply(problem::ProblemContext, solution::Solution, move::AddPackageMove
     return solution
 end
 
-function apply(problem::ProblemContext, solution::Solution, move::FlipPackageMove)
+function apply!(problem::ProblemContext, solution::Solution, move::FlipPackageMove)
     if move.package in solution.used_packages
-        return apply(problem, solution, RemovePackageMove(move.package))
+        return apply!(problem, solution, RemovePackageMove(move.package))
     end
-    return apply(problem, solution, AddPackageMove(move.package))
+    return apply!(problem, solution, AddPackageMove(move.package))
 end
