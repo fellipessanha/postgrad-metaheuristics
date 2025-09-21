@@ -1,0 +1,12 @@
+services:
+  test:
+    build: .
+    container_name: metaheuristics-test
+    working_dir: /app/Implementation
+    volumes:
+      - ./Implementation:/app/Implementation
+    environment:
+      - JULIA_PROJECT=/app/Implementation
+    command: julia --project=. --color=yes -e "using Pkg; Pkg.test()"
+    profiles:
+      - test
