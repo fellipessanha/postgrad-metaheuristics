@@ -9,8 +9,8 @@ struct ProblemContext
     dependency_matrix::Matrix{Bool}
 end
 
-struct Solution
-    used_packages::AbstractArray{Integer}
-    used_dependencies::AbstractDict{Integer}
-    cost::Integer
+mutable struct Solution
+    used_packages::AbstractSet{Integer}
+    used_dependencies::AbstractDict{Integer,AbstractSet{Integer}}
+    weight::Integer
 end
