@@ -94,6 +94,11 @@ for instance in test_instance_filepaths
 
             @test readd_score_diff > 0
             @test remove_score_diff + readd_score_diff == 0
+
+            readded_solution = MetaheuristicsExercises.apply(context, copy(removed_solution), readd_move)
+
+            @test greedy_solution.used_packages == readded_solution.used_packages
+            @test greedy_solution.used_dependencies == readded_solution.used_dependencies
         end
     end
 end
