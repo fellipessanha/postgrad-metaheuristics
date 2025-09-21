@@ -1,3 +1,3 @@
-Exercises/deliveries/*
-!Exercises/deliveries/*.tex
-!Exercises/deliveries/*.pdf
+deliveries/*
+!deliveries/*.tex
+!deliveries/*.pdf
