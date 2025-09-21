@@ -80,7 +80,7 @@ for instance in test_instance_filepaths
         @test 54 in removed_dependencies
     end
 
-    @testset "$(instance): test adding and removing package evaluates to the same number" begin
+    @testset "$(instance): adding and removing package evaluates to the same number" begin
         for package in greedy_solution.used_packages
             remove_move       = MetaheuristicsExercises.RemovePackageMove(package)
             remove_score_diff = evaluate(context, greedy_solution, remove_move)
@@ -99,6 +99,21 @@ for instance in test_instance_filepaths
 
             @test greedy_solution.used_packages == readded_solution.used_packages
             @test greedy_solution.used_dependencies == readded_solution.used_dependencies
+        end
+    end
+
+    greedy_evaluator = move::MetaheuristicsExercises.Move -> evaluate(context, greedy_solution, move)
+    @testset "$(instance): flip move behaviour should be identical to adding or removing" begin
+        for package in greedy_solution.used_packages
+            remove_move = MetaheuristicsExercises.RemovePackageMove(package)
+            flip_move   = MetaheuristicsExercises.FlipPackageMove(package)
+            @test greedy_evaluator(remove_move) == greedy_evaluator(flip_move)
+        end
+
+        for package in setdiff(collect(1:context.package_count), greedy_solution.used_packages)
+            add_move  = MetaheuristicsExercises.AddPackageMove(package)
+            flip_move = MetaheuristicsExercises.FlipPackageMove(package)
+            @test greedy_evaluator(add_move) == greedy_evaluator(flip_move)
         end
     end
 end
