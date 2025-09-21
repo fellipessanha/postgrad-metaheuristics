@@ -1,3 +1,32 @@
+@doc """
+    Apply a move to a solution, modifying it in-place.
+
+    # Arguments
+    - `problem::ProblemContext`: The problem context containing dependency relationships and weights.
+    - `solution::Solution`: The current solution to be modified.
+    - `move::Move`: The move to be applied to the solution.
+
+    # Returns
+    - `solution::Solution`: The modified solution after applying the move.
+
+    # Example
+    ```jldoctest
+    julia> original_weight = solution.weight
+    150
+    julia> new_solution = apply!(problem, solution, AddPackageMove(5))
+    Solution(...)
+    julia> new_solution.weight > original_weight
+    true
+    # Adding package 5 increased the solution weight due to new dependencies
+    julia> apply!(problem, solution, RemovePackageMove(5))
+    Solution(...)
+    # Removing package 5 returns to a lighter solution
+    ```
+"""
+function apply!(problem::ProblemContext, solution::Solution, move::Move)
+    @error("Not implemented for current move")
+end
+
 function apply!(problem::ProblemContext, solution::Solution, move::RemovePackageMove)
     if !(move.package in solution.used_packages)
         return solution
