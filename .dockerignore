@@ -1,0 +1,28 @@
+# Git files
+.git
+.gitignore
+
+# Documentation
+README.md
+docs/
+
+# GitHub workflows
+.github/
+
+# Development files
+.vscode/
+.pre-commit-config.yaml
+
+# Julia cache
+.julia/
+
+# Temporary files
+*.tmp
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Latex Deliveries
+deliveries/
