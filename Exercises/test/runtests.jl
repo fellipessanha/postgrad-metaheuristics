@@ -62,9 +62,9 @@ for instance in test_instance_filepaths
         @test evaluate(context, check_solution, MetaheuristicsExercises.AddPackageMove(used_package)) == 0
         @info "AddPackageMove with used index did not increase cost 0️⃣"
 
-        unused_package = setdiff(Set(1:context.package_count), check_solution.used_dependencies) |> rand
-        @test evaluate(context, check_solution, MetaheuristicsExercises.AddPackageMove(unused_package)) > 0
-        @info "AddPackageMove with used index did not increase cost ➕"
+        unused_packages = setdiff(Set(1:context.package_count), check_solution.used_packages)
+        @test evaluate(context, check_solution, MetaheuristicsExercises.RemovePackageMove(unused_packages |> rand)) == 0
+        @info "Random RemovePackageMove with unused index has cost 0️⃣"
     end
 
     # will be used to test the moves
@@ -75,7 +75,6 @@ for instance in test_instance_filepaths
         removed_dependencies =
             MetaheuristicsExercises.get_removed_dependencies_by_package(greedy_solution, removed_package)
 
-        @show removed_dependencies
         @test 54 in removed_dependencies
     end
 
@@ -83,12 +82,15 @@ for instance in test_instance_filepaths
         for package in greedy_solution.used_packages
             remove_move       = MetaheuristicsExercises.RemovePackageMove(package)
             remove_score_diff = evaluate(context, greedy_solution, remove_move)
-            removed_solution  = MetaheuristicsExercises.apply(context, greedy_solution, remove_move)
+            @test remove_score_diff < 0
+
+            removed_solution = MetaheuristicsExercises.apply(context, greedy_solution, remove_move)
+            @test greedy_evaluation + remove_score_diff == evaluate(context, removed_solution)
 
             readd_move       = MetaheuristicsExercises.AddPackageMove(package)
             readd_score_diff = evaluate(context, removed_solution, readd_move)
 
-            @test remove_score_diff < 0
+            @test readd_score_diff > 0
             @test remove_score_diff + readd_score_diff == 0
         end
     end
