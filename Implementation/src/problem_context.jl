@@ -14,3 +14,7 @@ mutable struct Solution
     used_dependencies::AbstractDict{Integer,AbstractSet{Integer}}
     weight::Integer
 end
+
+function Base.copy(solution::Solution)
+    return Solution(copy(solution.used_packages), copy(solution.used_dependencies), solution.weight)
+end
