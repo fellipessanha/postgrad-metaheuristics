@@ -26,21 +26,23 @@ solution = generate_random_greedy_initial_solution(problem, 0.3)
 """
 function generate_random_greedy_initial_solution(problem::ProblemContext, α::Real)::Solution
     @assert α <= 1 && α >= 0 "α ∈ [0, 1], got $(α)"
-    cost              = 0
+    weight            = 0
     packages_heap     = BinaryMaxHeap([(value, idx) for (idx, value) in enumerate(problem.package_scores)])
     feasible_packages = Vector{Tuple{Integer,Integer}}()
     used_dependencies = Dict{Integer,AbstractSet{Integer}}()
-    cost              = 0
+    weight            = 0
 
     fill_feasible_package(feasible_packages, packages_heap, problem, α)
 
     initial_solution = Set{Integer}()
-    while !isempty(feasible_packages) && cost < problem.storage_size
-        _value, idx      = pop_random_item!(feasible_packages)
-        new_dependencies = setdiff(get_dependencies_used_by_package(problem, idx), used_dependencies)
-        cost             += [problem.dependency_weights[i] for i in new_dependencies] |> sum
+    while !isempty(feasible_packages) && weight < problem.storage_size
+        _value, idx             = pop_random_item!(feasible_packages)
+        new_dependencies        = setdiff(get_dependencies_used_by_package(problem, idx), used_dependencies)
+        new_dependencies_weight = [problem.dependency_weights[i] for i in new_dependencies] |> sum
+        weight                  += new_dependencies_weight
 
-        if cost > problem.storage_size
+        if weight > problem.storage_size
+            weight -= new_dependencies_weight
             break
         end
 
@@ -53,7 +55,7 @@ function generate_random_greedy_initial_solution(problem::ProblemContext, α::Re
         fill_feasible_package(feasible_packages, packages_heap, problem, α)
     end
 
-    return Solution(initial_solution, used_dependencies, cost)
+    return Solution(initial_solution, used_dependencies, weight)
 end
 
 function add_dependencies_to_dependency_map!(
