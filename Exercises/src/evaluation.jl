@@ -43,10 +43,8 @@ function evaluate(problem::ProblemContext, solution::Solution, move::AddPackageM
 
     new_dependencies =
         setdiff(get_dependencies_used_by_package(problem, move.package), keys(solution.used_dependencies))
-    additional_cost = [problem.dependency_weights[dependency] for dependency in new_dependencies] |> sum
-    penalty_cost =
-        solution.cost <= problem.storage_size ?
-        calculate_solution_oversize_penalty(problem, solution.cost + additional_cost) : 0
+    additional_weight = [problem.dependency_weights[dependency] for dependency in new_dependencies] |> sum
+    penalty_cost = calculate_solution_oversize_penalty(problem, solution.weight + additional_weight)
     return problem.package_scores[move.package] - penalty_cost
 end
 
@@ -56,10 +54,8 @@ function evaluate(problem::ProblemContext, solution::Solution, move::RemovePacka
     end
 
     removed_dependencies = get_removed_dependencies_by_package(solution, move.package)
-    removed_cost = [problem.dependency_weights[dependency] for dependency in removed_dependencies] |> sum
-    penalty_cost =
-        solution.cost > problem.storage_size ?
-        calculate_solution_oversize_penalty(problem, solution.cost - removed_cost) : 0
+    removed_weight = [problem.dependency_weights[dependency] for dependency in removed_dependencies] |> sum
+    penalty_cost = calculate_solution_oversize_penalty(problem, solution.weight - removed_weight)
     return -(problem.package_scores[move.package] - penalty_cost)
 end
 
@@ -110,6 +106,6 @@ function get_all_used_dependencies(problem::ProblemContext, solution::Solution)
     get_all_used_dependencies(problem, solution.used_packages)
 end
 
-function calculate_solution_oversize_penalty(problem::ProblemContext, cost::Integer)
-    return cost > problem.storage_size ? problem.penalty_cost : 0
+function calculate_solution_oversize_penalty(problem::ProblemContext, weight::Integer)
+    return weight > problem.storage_size ? problem.penalty_cost : 0
 end
