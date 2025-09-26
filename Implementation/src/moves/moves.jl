@@ -50,10 +50,11 @@ end
     # Removing package 5 returns to a lighter solution
     ```
 """
-function apply!(problem::ProblemContext, solution::Solution, move::Move)
+function apply!(problem::ProblemContext, solution::Solution, move::Move)::Solution
     @error("Not implemented for current move")
 end
 
 include("add_package.jl")
 include("remove_package.jl")
 include("flip_package.jl")
+include("remove_dependency.jl")

@@ -72,6 +72,7 @@ for instance in test_instance_filepaths
     # will be used to test the moves
     greedy_solution = generate_greedy_initial_solution(context)
     greedy_evaluation = evaluate(context, greedy_solution)
+
     @testset "$(instance): test removing package has expected results in dependencies" begin
         removed_package = 69
         removed_dependencies =
@@ -114,6 +115,18 @@ for instance in test_instance_filepaths
             add_move  = MetaheuristicsExercises.AddPackageMove(package)
             flip_move = MetaheuristicsExercises.FlipPackageMove(package)
             @test greedy_evaluator(add_move) == greedy_evaluator(flip_move)
+        end
+    end
+
+    @testset "$(instance): remove dependency move behaves as expected" begin
+        for dependency in (greedy_solution.used_dependencies |> keys)
+            remove_move = MetaheuristicsExercises.RemoveDependencyMove(dependency)
+            @test greedy_evaluation >= greedy_evaluator(remove_move)
+
+            removed_solution = MetaheuristicsExercises.apply!(context, copy(greedy_solution), remove_move)
+
+            @test isdisjoint(dependency, keys(removed_solution.used_dependencies))
+            @test isdisjoint(greedy_solution.used_dependencies[dependency], removed_solution.used_packages)
         end
     end
 end
