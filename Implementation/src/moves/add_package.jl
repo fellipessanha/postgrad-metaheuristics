@@ -22,10 +22,7 @@ function apply!(problem::ProblemContext, solution::Solution, move::AddPackageMov
 
     new_dependencies =
         setdiff(get_dependencies_used_by_package(problem, move.package), keys(solution.used_dependencies))
-    for dependency in new_dependencies
-        dependency_packages                    = get(solution.used_dependencies, dependency, Set{Integer}())
-        solution.used_dependencies[dependency] = union(dependency_packages, move.package)
-    end
+    add_dependencies_to_dependency_map!(solution, move.package => new_dependencies)
 
     additional_weight = [problem.dependency_weights[dependency] for dependency in new_dependencies] |> sum
     solution.weight   += additional_weight

@@ -2,6 +2,7 @@ module MetaheuristicsExercises
 
 include("problem_context.jl")
 include("parsing.jl")
+include("utilities.jl")
 include("evaluation.jl")
 include("moves/moves.jl")
 include("constructive.jl")
