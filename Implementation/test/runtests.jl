@@ -142,4 +142,16 @@ for instance in test_instance_filepaths
             @test add_solution.weight == greedy_solution.weight + expected_weight_delta
         end
     end
+
+    @testset "$(instance): check move iterators make sense" begin
+        for (move, expected_count) in Dict(
+            AddDependencyMove => context.dependency_count,
+            RemoveDependencyMove => context.dependency_count,
+            AddPackageMove => context.package_count,
+            RemovePackageMove => context.package_count,
+            FlipPackageMove => context.package_count,
+        )
+            @test iterate_move(context, move) |> collect |> length == expected_count
+        end
+    end
 end

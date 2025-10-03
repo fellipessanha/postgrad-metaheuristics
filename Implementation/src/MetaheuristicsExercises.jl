@@ -13,7 +13,7 @@ export get_all_used_dependencies, evaluate, generate_random_greedy_initial_solut
 export generate_greedy_initial_solution, generate_random_initial_solution
 export get_removed_dependencies_by_package
 
-export apply!
+export apply!, iterate_move
 export AddPackageMove, RemovePackageMove, FlipPackageMove
 export AddDependencyMove, RemoveDependencyMove
 

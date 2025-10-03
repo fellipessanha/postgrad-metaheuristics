@@ -54,6 +54,10 @@ function apply!(problem::ProblemContext, solution::Solution, move::Move)::Soluti
     @error("Not implemented for current move")
 end
 
+function iterate_move(problem::ProblemContext, ::Type{Move})
+    @error("Not implemented for current move")
+end
+
 include("add_package.jl")
 include("remove_package.jl")
 include("flip_package.jl")
