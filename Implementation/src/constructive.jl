@@ -59,14 +59,36 @@ function generate_random_greedy_initial_solution(problem::ProblemContext, α::Re
 end
 
 function add_dependencies_to_dependency_map!(
+    solution::Solution,
+    new_dependencies::AbstractDict{T,AbstractVector{V}},
+) where {T<:Integer,V<:Integer}
+    add_dependencies_to_dependency_map!(solution.used_dependencies, new_dependencies)
+end
+
+function add_dependencies_to_dependency_map!(
+    solution::Solution,
+    new_dependencies::Pair{<:Integer,<:AbstractVector{<:Integer}},
+)
+    add_dependencies_to_dependency_map!(solution.used_dependencies, new_dependencies)
+end
+
+function add_dependencies_to_dependency_map!(
     used_dependencies::AbstractDict{Integer,AbstractSet{Integer}},
     new_dependencies::AbstractDict{Integer,AbstractVector{Integer}},
 )
-    for (package, dependencies) in new_dependencies
-        for dependency in dependencies
-            current_packages = get(used_dependencies, dependency, Set{Integer}())
-            used_dependencies[dependency] = union(current_packages, package)
-        end
+    for pair in new_dependencies
+        add_dependencies_to_dependency_map!(used_dependencies, pair)
+    end
+end
+
+function add_dependencies_to_dependency_map!(
+    used_dependencies::AbstractDict{Integer,AbstractSet{Integer}},
+    new_dependency::Pair{<:Integer,<:AbstractVector{<:Integer}},
+)
+    (package, dependencies) = new_dependency
+    for dependency in dependencies
+        current_packages = get(used_dependencies, dependency, Set{Integer}())
+        used_dependencies[dependency] = union(current_packages, package)
     end
 end
 
