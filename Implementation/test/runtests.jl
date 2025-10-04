@@ -154,4 +154,19 @@ for instance in test_instance_filepaths
             @test iterate_move(context, move) |> collect |> length == expected_count
         end
     end
+
+    @testset "$(instance): check local_search works as expected" begin
+        best_move_add_dependency = local_search(context, greedy_solution, BestImprovement, Maximize, AddDependencyMove)
+        @test best_move_add_dependency[2] >= 0
+
+        best_move_remove_dependency =
+            local_search(context, greedy_solution, BestImprovement, Maximize, RemoveDependencyMove)
+        @test best_move_remove_dependency[2] == 0
+
+        best_move_add_package = local_search(context, greedy_solution, BestImprovement, Maximize, AddPackageMove)
+        @test best_move_add_package[2] >= 0
+
+        best_move_remove_package = local_search(context, greedy_solution, BestImprovement, Maximize, RemovePackageMove)
+        @test best_move_remove_package[2] == 0
+    end
 end

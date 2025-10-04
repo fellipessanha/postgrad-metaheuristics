@@ -6,6 +6,7 @@ include("utilities.jl")
 include("evaluation.jl")
 include("moves/moves.jl")
 include("constructive.jl")
+include("search/search.jl")
 
 export ProblemContext, Solution, Move
 export make_problem_context_from_file, get_dependencies_used_by_package
@@ -16,5 +17,7 @@ export get_removed_dependencies_by_package
 export apply!, iterate_move
 export AddPackageMove, RemovePackageMove, FlipPackageMove
 export AddDependencyMove, RemoveDependencyMove
+
+export BestImprovement, FirstImprovement, Maximize, Minimize, local_search
 
 end
