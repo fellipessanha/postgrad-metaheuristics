@@ -18,6 +18,6 @@ export apply!, iterate_move
 export AddPackageMove, RemovePackageMove, FlipPackageMove
 export AddDependencyMove, RemoveDependencyMove
 
-export BestImprovement, FirstImprovement, Maximize, Minimize, local_search
+export BestImprovement, FirstImprovement, RandomSearch, Maximize, Minimize, local_search
 
 end

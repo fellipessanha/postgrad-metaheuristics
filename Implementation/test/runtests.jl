@@ -169,4 +169,18 @@ for instance in test_instance_filepaths
         best_move_remove_package = local_search(context, greedy_solution, BestImprovement, Maximize, RemovePackageMove)
         @test best_move_remove_package[2] == 0
     end
+
+    @testset "$(instance): check Random local_search works as expected" begin
+        best_move_add_dependency = local_search(context, greedy_solution, RandomSearch, AddDependencyMove)
+        @test best_move_add_dependency[1] |> typeof <: AddDependencyMove
+
+        best_move_remove_dependency = local_search(context, greedy_solution, RandomSearch, RemoveDependencyMove)
+        @test best_move_remove_dependency[1] |> typeof <: RemoveDependencyMove
+
+        best_move_add_package = local_search(context, greedy_solution, RandomSearch, AddPackageMove)
+        @test best_move_add_package[1] |> typeof <: AddPackageMove
+
+        best_move_remove_package = local_search(context, greedy_solution, RandomSearch, RemovePackageMove)
+        @test best_move_remove_package[1] |> typeof <: RemovePackageMove
+    end
 end
