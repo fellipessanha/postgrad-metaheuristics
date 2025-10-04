@@ -35,3 +35,7 @@ function apply!(problem::ProblemContext, solution::Solution, move::RemovePackage
 
     return solution
 end
+
+function iterate_move(problem::ProblemContext, ::Type{RemovePackageMove})
+    return 1:problem.package_count
+end

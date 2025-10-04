@@ -16,3 +16,7 @@ function apply!(problem::ProblemContext, solution::Solution, move::FlipPackageMo
     end
     return apply!(problem, solution, AddPackageMove(move.package))
 end
+
+function iterate_move(problem::ProblemContext, ::Type{FlipPackageMove})
+    return 1:problem.package_count
+end

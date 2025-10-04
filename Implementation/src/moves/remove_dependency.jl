@@ -30,3 +30,7 @@ function apply!(problem::ProblemContext, solution::Solution, move::RemoveDepende
 
     return solution
 end
+
+function iterate_move(problem::ProblemContext, ::Type{RemoveDependencyMove})
+    return 1:problem.dependency_count
+end
