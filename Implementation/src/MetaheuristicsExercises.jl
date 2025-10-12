@@ -7,6 +7,7 @@ include("evaluation.jl")
 include("moves/moves.jl")
 include("constructive.jl")
 include("search/search.jl")
+include("metaheuristics/metaheuristics.jl")
 
 export ProblemContext, Solution, Move
 export make_problem_context_from_file, get_dependencies_used_by_package
