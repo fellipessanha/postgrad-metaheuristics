@@ -14,9 +14,13 @@ function get_package_dependencies(problem::ProblemContext, packages::AbstractSet
     return as_set(dependencies)
 end
 
-function get_dependency_packages_naive(problem::ProblemContext, dependency::Integer)
+function get_dependency_packages(problem::ProblemContext, dependency::Integer)
     enumerated_depedencies = filter(t -> t[2], problem.dependency_matrix[:, dependency] |> enumerate)
     return [t[1] for t in enumerated_depedencies]
+end
+
+function get_dependency_packages(problem::ProblemContext, solution::Solution, dependency::Integer)::AbstractSet
+    return Set([pkg for pkg in solution.used_packages if problem.dependency_matrix[pkg, dependency]])
 end
 
 function get_allowed_packages(problem::ProblemContext, dependencies::AbstractSet{Integer})

@@ -42,8 +42,7 @@ for instance in test_instance_filepaths
         @test_throws AssertionError generate_random_greedy_initial_solution(context, 2)
         @info "threw successfully!"
 
-        greedy_solutions::AbstractVector{MetaheuristicsExercises.Solution} =
-            [generate_greedy_initial_solution(context) for i in 1:2]
+        greedy_solutions::AbstractVector{Solution} = [generate_greedy_initial_solution(context) for i in 1:2]
         @test allequal([solution.used_packages for solution in greedy_solutions])
         @test all([solution.weight <= context.storage_size for solution in greedy_solutions])
         @info "greedy solutions seem consistent ☑️"
@@ -61,11 +60,11 @@ for instance in test_instance_filepaths
         check_solution = random_solutions[1]
 
         used_package = check_solution.used_packages |> rand
-        @test evaluate(context, check_solution, MetaheuristicsExercises.AddPackageMove(used_package)) == 0
+        @test evaluate(context, check_solution, AddPackageMove(used_package)) == 0
         @info "AddPackageMove with used index did not increase cost 0️⃣"
 
         unused_packages = setdiff(Set(1:context.package_count), check_solution.used_packages)
-        @test evaluate(context, check_solution, MetaheuristicsExercises.RemovePackageMove(unused_packages |> rand)) == 0
+        @test evaluate(context, check_solution, RemovePackageMove(unused_packages |> rand)) == 0
         @info "Random RemovePackageMove with unused index has cost 0️⃣"
     end
 
@@ -75,58 +74,72 @@ for instance in test_instance_filepaths
 
     @testset "$(instance): test removing package has expected results in dependencies" begin
         removed_package = 69
-        removed_dependencies =
-            MetaheuristicsExercises.get_removed_dependencies_by_package(greedy_solution, removed_package)
+        removed_dependencies = get_removed_dependencies_by_package(greedy_solution, removed_package)
 
         @test 54 in removed_dependencies
     end
 
     @testset "$(instance): adding and removing package evaluates to the same number" begin
         for package in greedy_solution.used_packages
-            remove_move       = MetaheuristicsExercises.RemovePackageMove(package)
+            remove_move       = RemovePackageMove(package)
             remove_score_diff = evaluate(context, greedy_solution, remove_move)
             @test remove_score_diff < 0
 
-            removed_solution = MetaheuristicsExercises.apply!(context, copy(greedy_solution), remove_move)
+            removed_solution = apply!(context, copy(greedy_solution), remove_move)
             @test greedy_evaluation + remove_score_diff == evaluate(context, removed_solution)
 
-            readd_move       = MetaheuristicsExercises.AddPackageMove(package)
+            readd_move       = AddPackageMove(package)
             readd_score_diff = evaluate(context, removed_solution, readd_move)
 
             @test readd_score_diff > 0
             @test remove_score_diff + readd_score_diff == 0
 
-            readded_solution = MetaheuristicsExercises.apply!(context, copy(removed_solution), readd_move)
+            readded_solution = apply!(context, copy(removed_solution), readd_move)
 
             @test greedy_solution.used_packages == readded_solution.used_packages
             @test greedy_solution.used_dependencies == readded_solution.used_dependencies
         end
     end
 
-    greedy_evaluator = move::MetaheuristicsExercises.Move -> evaluate(context, greedy_solution, move)
+    greedy_evaluator = move::Move -> evaluate(context, greedy_solution, move)
     @testset "$(instance): flip move behaviour should be identical to adding or removing" begin
         for package in greedy_solution.used_packages
-            remove_move = MetaheuristicsExercises.RemovePackageMove(package)
-            flip_move   = MetaheuristicsExercises.FlipPackageMove(package)
+            remove_move = RemovePackageMove(package)
+            flip_move   = FlipPackageMove(package)
             @test greedy_evaluator(remove_move) == greedy_evaluator(flip_move)
         end
 
         for package in setdiff(collect(1:context.package_count), greedy_solution.used_packages)
-            add_move  = MetaheuristicsExercises.AddPackageMove(package)
-            flip_move = MetaheuristicsExercises.FlipPackageMove(package)
+            add_move  = AddPackageMove(package)
+            flip_move = FlipPackageMove(package)
             @test greedy_evaluator(add_move) == greedy_evaluator(flip_move)
         end
     end
 
     @testset "$(instance): remove dependency move behaves as expected" begin
         for dependency in (greedy_solution.used_dependencies |> keys)
-            remove_move = MetaheuristicsExercises.RemoveDependencyMove(dependency)
-            @test greedy_evaluation >= greedy_evaluator(remove_move)
+            remove_move = RemoveDependencyMove(dependency)
+            @test greedy_evaluator(remove_move) <= 0
 
-            removed_solution = MetaheuristicsExercises.apply!(context, copy(greedy_solution), remove_move)
+            removed_solution = apply!(context, copy(greedy_solution), remove_move)
 
             @test isdisjoint(dependency, keys(removed_solution.used_dependencies))
             @test isdisjoint(greedy_solution.used_dependencies[dependency], removed_solution.used_packages)
+        end
+    end
+
+    @testset "$(instance): add dependency move behaves as expected" begin
+        for dependency in 1:context.dependency_count
+            add_move = AddDependencyMove(dependency)
+            add_evaluation_diff = greedy_evaluator(add_move)
+            @test add_evaluation_diff >= 0
+
+            add_solution = apply!(context, copy(greedy_solution), add_move)
+
+            @test dependency in keys(add_solution.used_dependencies)
+            expected_weight_delta =
+                dependency in keys(greedy_solution.used_dependencies) ? 0 : context.dependency_weights[dependency]
+            @test add_solution.weight == greedy_solution.weight + expected_weight_delta
         end
     end
 end

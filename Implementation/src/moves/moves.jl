@@ -57,4 +57,5 @@ end
 include("add_package.jl")
 include("remove_package.jl")
 include("flip_package.jl")
+include("add_dependency.jl")
 include("remove_dependency.jl")
