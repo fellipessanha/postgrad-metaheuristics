@@ -26,3 +26,7 @@ function apply!(problem::ProblemContext, solution::Solution, move::AddDependency
 
     return solution
 end
+
+function iterate_move(problem::ProblemContext, ::Type{AddDependencyMove})
+    return 1:problem.dependency_count
+end
