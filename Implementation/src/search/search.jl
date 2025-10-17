@@ -56,7 +56,7 @@ function local_search(
     for idx in iterate_move(problem, MoveType) |> collect
         move = MoveType(idx)
         move_evaluation = evaluate(problem, solution, move)
-        should_update = is_evaluation_better(move_evaluation, best_move[1], Evaluation)
+        should_update = is_evaluation_better(move_evaluation, best_move[2], Evaluation)
         if should_update
             best_move = (move, move_evaluation)
         end
