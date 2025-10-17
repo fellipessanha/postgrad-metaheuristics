@@ -1,3 +1,5 @@
+using Random
+
 abstract type SearchStrategy end
 
 abstract type BestImprovement <: SearchStrategy end
@@ -10,11 +12,11 @@ abstract type Minimize <: EvaluationType end
 abstract type Maximize <: EvaluationType end
 
 function is_evaluation_better(move_evaluation, best_evaluation, ::Type{Minimize})
-    return move_evaluation < 0 && move_evaluation < best_evaluation
+    return move_evaluation < best_evaluation
 end
 
 function is_evaluation_better(move_evaluation, best_evaluation, ::Type{Maximize})
-    return move_evaluation > 0 && move_evaluation < best_evaluation
+    return move_evaluation > best_evaluation
 end
 
 function stop_criteria(_::Bool, ::Type{BestImprovement})
@@ -45,6 +47,16 @@ function local_search(
     return move, move_evaluation
 end
 
+function local_search(problem::ProblemContext, solution::Solution, ::Type{RandomSearch}, ::Type{RemoveDependencyMove})
+    removable_packages = solution.used_dependencies |> keys |> collect
+    if removable_packages |> length <= 0
+        return nothing, 0
+    end
+    move = removable_packages |> rand |> RemoveDependencyMove
+    move_evaluation = evaluate(problem, solution, move)
+    return move, move_evaluation
+end
+
 function local_search(
     problem::ProblemContext,
     solution::Solution,
@@ -53,10 +65,10 @@ function local_search(
     ::Type{MoveType},
 ) where {StrategyType<:SearchStrategy,Evaluation<:EvaluationType,MoveType<:Move}
     best_move = (nothing, 0)
-    for idx in iterate_move(problem, MoveType) |> collect
+    for idx in iterate_move(problem, MoveType) |> collect |> shuffle
         move = MoveType(idx)
         move_evaluation = evaluate(problem, solution, move)
-        should_update = is_evaluation_better(move_evaluation, best_move[2], Evaluation)
+        should_update = is_evaluation_better(evaluate(problem, solution), best_move[2], Evaluation)
         if should_update
             best_move = (move, move_evaluation)
         end
