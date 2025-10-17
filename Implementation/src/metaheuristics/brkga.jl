@@ -27,7 +27,7 @@ function search(
     ::Type{EvaluatorType},
 ) where {EvaluatorType<:EvaluationType}
     population = [encode(problem, brkga_config.strategy) for _ in 1:brkga_config.population_size]
-    @info "population size = $(problem.package_count)"
+    @debug "population size = $(problem.package_count)"
     decoder = individual -> decode(problem, individual, brkga_config.strategy)
     evaluator = solution -> evaluate(problem, solution)
     counter = 0
@@ -52,7 +52,7 @@ function search(
 
             elite_part = elite_candidate[1][1:seed]
             random_part = candidate[1][seed:length(candidate)]
-            push!(final_population, cat(elite_part, random_part, dims = 1) |> shuffle)
+            push!(final_population, cat(elite_part, random_part, dims = 1))
         end
 
         while length(final_population) < length(population)
@@ -68,25 +68,34 @@ end
 test_instances = ["prob-software-85-100-812-12180.txt"]
 
 function get_instance_filepaths(instances = test_instances)
-    return Iterators.map(instance -> joinpath("test/instances", instance), instances)
+    return Iterators.map(instance -> joinpath("../Implementation/test/instances", instance), instances)
 end
 
-function test_brkga()
+function test_brkga(
+    population = 40,
+    elitism = 0.14,
+    mutations = 0.2,
+    iterations = 3000,
+    crossover_points = 0.5,
+    random_seed::Number = nothing,
+)
+    if random_seed != nothing
+        Random.seed!(random_seed)
+    end
     test_instance_filepaths = get_instance_filepaths() |> collect
     context = test_instance_filepaths[1] |> open |> make_problem_context_from_file
-    brkga_config = BRKGAConfig(100, 0.1, 0.15, 6000, PackagesStrategy(0.5))
+    brkga_config = BRKGAConfig(population, elitism, mutations, iterations, PackagesStrategy(crossover_points))
     populations = []
-    for i in 1:30
-        @info "running iteration #$(i)"
+    evaluator = solution -> evaluate(context, solution)
+    for i in 1:3
         runtime = @elapsed population = search(brkga_config, context, Maximize)
         decoder = individual -> decode(context, individual, brkga_config.strategy)
-        evaluator = solution -> evaluate(context, solution)
 
-        insertion = [p |> decoder |> evaluator for p in population], runtime
-        @show insertion
+        insertion = (sort([p |> decoder for p in population], rev = true, by = evaluator), runtime)
+
         push!(populations, (insertion))
     end
 
-    @show populations
-    return populations
+    arr = [[p |> evaluator for p in insertion[1][1:3]] for insertion in populations] |> Iterators.flatten |> collect
+    println("-$(arr |> mean) $([i[2] for i in populations] |> sum)")
 end
