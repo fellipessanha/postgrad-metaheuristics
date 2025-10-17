@@ -1,7 +1,7 @@
 function make_problem_context_from_file(contents::IOStream, penalty_cost = 9999)
     package_count, dependency_count, relation_count, storage_size =
         map(entry -> parse(Int, entry), contents |> readline |> split)
-    @info "package_count: $(package_count), dependency_count: $(dependency_count),\
+    @debug "package_count: $(package_count), dependency_count: $(dependency_count),\
     relation_count: $(relation_count), storage_size: $(storage_size)"
 
     package_scores = parse_vector_line(contents |> readline, package_count)
