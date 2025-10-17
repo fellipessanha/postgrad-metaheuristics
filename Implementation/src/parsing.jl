@@ -1,4 +1,4 @@
-function make_problem_context_from_file(contents::IOStream, penalty_cost = 9999)
+function make_problem_context_from_file(contents::IOStream, penalty_cost = nothing)
     package_count, dependency_count, relation_count, storage_size =
         map(entry -> parse(Int, entry), contents |> readline |> split)
     @debug "package_count: $(package_count), dependency_count: $(dependency_count),\
@@ -7,6 +7,7 @@ function make_problem_context_from_file(contents::IOStream, penalty_cost = 9999)
     package_scores = parse_vector_line(contents |> readline, package_count)
 
     dependency_weights = parse_vector_line(contents |> readline, dependency_count)
+    penalty_cost = penalty_cost == nothing ? 10 * dependency_weights |> sum : penalty_cost
     @assert length(dependency_weights) == dependency_count
 
     dependencies = map(parse_vector_line, contents |> readlines)

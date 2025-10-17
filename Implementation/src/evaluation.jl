@@ -1,8 +1,8 @@
 function evaluate(problem::ProblemContext, solution::Union{AbstractSet{T},AbstractArray{T}}) where {T<:Integer}
-    score            = [problem.package_scores[i] for i in solution] |> sum
-    dependencies     = get_all_used_dependencies(problem, solution)
-    cost             = [problem.dependency_weights[i] for i in dependencies] |> sum
-    oversize_penalty = calculate_solution_oversize_penalty(problem, cost)
+    score = [problem.package_scores[i] for i in solution] |> sum
+    dependencies = get_all_used_dependencies(problem, solution)
+    cost = [problem.dependency_weights[i] for i in dependencies] |> sum
+    oversize_penalty = cost > problem.storage_size ? problem.penalty_cost : 0
 
     return score - oversize_penalty
 end
