@@ -2,6 +2,10 @@ struct RemoveDependencyMove <: Move
     dependency::Integer
 end
 
+struct RemoveDependenciesMove <: Move
+    dependency::AbstractArray{Integer}
+end
+
 function evaluate(problem::ProblemContext, solution::Solution, move::RemoveDependencyMove)::Integer
     if !(move.dependency in keys(solution.used_dependencies))
         return 0
@@ -29,6 +33,12 @@ function apply!(problem::ProblemContext, solution::Solution, move::RemoveDepende
     end
 
     return solution
+end
+
+function apply!(problem::ProblemContext, solution::Solution, move::RemoveDependenciesMove)::Solution
+    for dep in move.dependency
+        apply!(problem, solution, RemoveDependencyMove(dep))
+    end
 end
 
 function iterate_move(problem::ProblemContext, ::Type{RemoveDependencyMove})

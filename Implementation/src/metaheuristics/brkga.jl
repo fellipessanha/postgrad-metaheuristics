@@ -11,6 +11,8 @@ struct BRKGAConfig
     elitism_percent::Float32
     max_iterations::Integer
     strategy::Any
+    max_time::Union{Real,Nothing}
+    elite_bias::Float32
 end
 
 function encode(problem::ProblemContext, _::PackagesStrategy)
@@ -26,76 +28,74 @@ function search(
     problem::ProblemContext,
     ::Type{EvaluatorType},
 ) where {EvaluatorType<:EvaluationType}
+    init_time = time()
     population = [encode(problem, brkga_config.strategy) for _ in 1:brkga_config.population_size]
     @debug "population size = $(problem.package_count)"
     decoder = individual -> decode(problem, individual, brkga_config.strategy)
     evaluator = solution -> evaluate(problem, solution)
     counter = 0
 
-    while counter < brkga_config.max_iterations
+    while counter < brkga_config.max_iterations && time() - init_time < brkga_config.max_time
         evaluated = [(p, p |> decoder |> evaluator) for p in population]
         sort!(evaluated, by = p -> p[2], rev = EvaluationType != Maximize)
+        @show evaluated[1][2]
 
         elite_size = round(Integer, brkga_config.elitism_percent * length(evaluated))
         mutation_size = round(Integer, brkga_config.mutant_percent * length(evaluated))
 
-        final_population = [genes for (genes, _) in evaluated[1:elite_size]]
-        elite_crossover_idx = rand(1:elite_size)
-        elite_candidate = evaluated[elite_crossover_idx]
-        evaluated[elite_crossover_idx], evaluated[1] = evaluated[1], evaluated[elite_crossover_idx]
-        popfirst!(evaluated)
+        elites = [genes for (genes, _) in evaluated[1:elite_size]]
+        normal_parents = [genes for (genes, _) in evaluated[(elite_size+1):end]]
 
-        crossovers = length(population) - elite_size - mutation_size
-        for _ in 1:crossovers
-            candidate = rand(evaluated)
-            seed = rand(1:min(length(candidate), length(elite_candidate)))
+        non_elites = [
+            crossover(rand(elites), rand(normal_parents), brkga_config.elite_bias) for
+            _ in 1:(length(population)-elite_size-mutation_size)
+        ]
 
-            elite_part = elite_candidate[1][1:seed]
-            random_part = candidate[1][seed:length(candidate)]
-            push!(final_population, cat(elite_part, random_part, dims = 1))
-        end
-
-        while length(final_population) < length(population)
-            push!(final_population, encode(problem, brkga_config.strategy))
-        end
-        population = final_population
+        mutants = [encode(problem, brkga_config.strategy) for _ in 1:mutation_size]
+        population = vcat(elites, non_elites, mutants)
 
         counter += 1
     end
     return population
 end
 
-test_instances = ["prob-software-85-100-812-12180.txt"]
+function crossover(elite::AbstractVector, normal::AbstractVector, bias::Real)::AbstractArray{Real}
+    return [rand() > bias ? elite[key] : normal[key] for key in eachindex(normal)]
+end
+
+test_instances = ["sukp02_100_85_0.10_0.75.txt", "sukp07_285_300_0.10_0.75.txt", "sukp28_485_500_0.15_0.85.txt"]
 
 function get_instance_filepaths(instances = test_instances)
     return Iterators.map(instance -> joinpath("../Implementation/test/instances", instance), instances)
 end
 
 function test_brkga(
-    population = 40,
+    population_size = 120,
     elitism = 0.14,
     mutations = 0.2,
-    iterations = 3000,
-    crossover_points = 0.5,
-    random_seed::Number = nothing,
+    iterations = 10000,
+    crossover_points = 0.97,
+    random_seed = 42,
 )
     if random_seed != nothing
         Random.seed!(random_seed)
     end
-    test_instance_filepaths = get_instance_filepaths() |> collect
-    context = test_instance_filepaths[1] |> open |> make_problem_context_from_file
-    brkga_config = BRKGAConfig(population, elitism, mutations, iterations, PackagesStrategy(crossover_points))
     populations = []
-    evaluator = solution -> evaluate(context, solution)
-    for i in 1:3
+    for instance in get_instance_filepaths() |> collect
+        println("running brkga for instance $(instance)")
+        context = instance |> open |> make_problem_context_from_file
+        evaluator = solution -> evaluate(context, solution)
+        brkga_config =
+            BRKGAConfig(population_size, elitism, mutations, iterations, PackagesStrategy(crossover_points), 10, 0.6)
+
         runtime = @elapsed population = search(brkga_config, context, Maximize)
         decoder = individual -> decode(context, individual, brkga_config.strategy)
 
         insertion = (sort([p |> decoder for p in population], rev = true, by = evaluator), runtime)
+        @show insertion[1][1] |> evaluator
 
-        push!(populations, (insertion))
+        push!(populations, insertion)
     end
 
-    arr = [[p |> evaluator for p in insertion[1][1:3]] for insertion in populations] |> Iterators.flatten |> collect
-    println("-$(arr |> mean) $([i[2] for i in populations] |> sum)")
+    return populations
 end

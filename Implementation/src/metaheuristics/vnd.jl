@@ -9,6 +9,8 @@ struct VNDConfig
     max_iterations::Union{Integer,Nothing}
     max_time::Union{Real,Nothing}
     α::Real
+    max_perturb::Integer
+    max_search::Integer
 end
 
 function stop_criteria(config::VNDConfig, timedelta::Real, iteration_counter::Integer)
@@ -38,58 +40,72 @@ function search(config::VNDConfig, problem::ProblemContext, ::Type{EvaluatorType
     counter = 0
 
     while stop_criteria(config, time() - init_time, counter)
-        move = rand(config.descents)
-        best_move, upgrade = local_search(problem, reference, move.search, EvaluatorType, move.move)
+        for _ in 1:config.max_search
+            move = rand(config.descents)
+            best_move, upgrade = local_search(problem, reference, move.search, EvaluatorType, move.move)
+            if upgrade < 0
+                break
+            end
 
-        if best_move != nothing
-            candidate = apply!(problem, candidate, best_move)
-            candidate_eval = candidate |> evaluator
-            if is_evaluation_better(candidate_eval, best_eval, EvaluatorType)
-                @debug "improved: $(candidate_eval)"
-                best = copy(candidate)
-                best_eval = candidate_eval
-                reference = candidate
+            if best_move != nothing
+                candidate = apply!(problem, candidate, best_move)
+                candidate_eval = candidate |> evaluator
+                if is_evaluation_better(candidate_eval, best_eval, EvaluatorType)
+                    @info "improved: $(candidate_eval)"
+                    best = copy(candidate)
+                    best_eval = candidate_eval
+                    reference = candidate
+                end
             end
         end
 
         reference = update_reference(reference, best)
 
-        used_perturb = config.perturbations |> rand
-        used_move, _ = local_search(problem, reference, used_perturb.search, used_perturb.move)
-        if used_move != nothing
-            reference = apply!(problem, reference, used_move)
-        else
-            reference = generate_random_greedy_initial_solution(problem, config.α)
+        for _ in rand(1:config.max_perturb)
+            used_perturb = config.perturbations |> rand
+            used_move, _ = local_search(problem, reference, used_perturb.search, used_perturb.move)
+            if used_move != nothing
+                reference = apply!(problem, reference, used_move)
+            else
+                reference = generate_random_greedy_initial_solution(problem, config.α)
+            end
         end
 
         counter += 1
     end
 
-    @info [p for p in best.used_packages] |> sort, best |> evaluator
     return best
 end
 
 function get_instance_filepaths(instances = test_instances)
-    return Iterators.map(instance -> joinpath("./Implementation/test/instances", instance), instances)
+    return Iterators.map(instance -> joinpath("./test/instances", instance), instances)
 end
 
-function test_vnd(instances = ["prob-software-85-100-812-12180.txt"])
+set_instances = ["sukp02_100_85_0.10_0.75.txt", "sukp07_285_300_0.10_0.75.txt", "sukp28_485_500_0.15_0.85.txt"]
+
+function test_vnd(instances = set_instances)
+    random_seed = 42
+    Random.seed!(random_seed)
+    @info "using random seed $(random_seed)"
+
     test_instance_filepaths = get_instance_filepaths(instances) |> collect
-    context = test_instance_filepaths[1] |> open |> make_problem_context_from_file
-    config = VNDConfig(
-        [LocalSearch(AddPackageMove, BestImprovement), LocalSearch(AddPackageMove, FirstImprovement)],
-        [LocalSearch(RemoveDependencyMove, RandomSearch), LocalSearch(RemovePackageMove, RandomSearch)],
-        nothing,
-        10,
-        0.5,
-    )
-    solutions = []
-    evaluator = solution -> evaluate(context, solution)
-    sols = []
-    for i in 1:3
+    sols = Dict()
+    for instance in test_instance_filepaths
+        context = instance |> open |> make_problem_context_from_file
+        config = VNDConfig(
+            [LocalSearch(AddPackageMove, BestImprovement)],
+            [LocalSearch(RemoveDependencyMove, RandomSearch), LocalSearch(RemovePackageMove, RandomSearch)],
+            nothing,
+            20,
+            0.5,
+            40,
+            60,
+        )
+        solutions = []
+        evaluator = solution -> evaluate(context, solution)
         thing = search(config, context, Maximize)
-        push!(sols, thing)
-        @show thing |> evaluator
+        sols[instance] = (context, thing)
+        @info "instance: $(instance) -> $(thing |> evaluator)"
     end
 
     return sols
