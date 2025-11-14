@@ -1,3 +1,10 @@
 deliveries/*
 !deliveries/*.tex
 !deliveries/*.pdf
+!deliveries/*.md
+
+*.log
+*.fls
+*.out
+*.synctex.gz
+*.aux

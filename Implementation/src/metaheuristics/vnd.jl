@@ -1,3 +1,4 @@
+using JSON
 struct LocalSearch
     move::Type
     search::Type
@@ -101,12 +102,16 @@ function test_vnd(instances = set_instances)
             40,
             60,
         )
-        solutions = []
+
         evaluator = solution -> evaluate(context, solution)
         thing = search(config, context, Maximize)
         sols[instance] = (context, thing)
         @info "instance: $(instance) -> $(thing |> evaluator)"
     end
 
+    data = [(sol, evaluate(problem, sol), get_cost(problem, sol)) for (problem, sol) in sols |> values]
+    json_data =
+        [Dict("solution" => sol.used_packages, "score" => eval, "cost" => sol.weight) for (sol, eval, cost) in data]
+    write("brkga_output.json", JSON.json(json_data))
     return sols
 end

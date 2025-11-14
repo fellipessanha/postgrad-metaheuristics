@@ -1,4 +1,5 @@
 using BenchmarkTools
+using JSON
 using Statistics
 using Random
 struct PackagesStrategy
@@ -38,7 +39,6 @@ function search(
     while counter < brkga_config.max_iterations && time() - init_time < brkga_config.max_time
         evaluated = [(p, p |> decoder |> evaluator) for p in population]
         sort!(evaluated, by = p -> p[2], rev = EvaluationType != Maximize)
-        @show evaluated[1][2]
 
         elite_size = round(Integer, brkga_config.elitism_percent * length(evaluated))
         mutation_size = round(Integer, brkga_config.mutant_percent * length(evaluated))
@@ -81,6 +81,7 @@ function test_brkga(
         Random.seed!(random_seed)
     end
     populations = []
+    data = []
     for instance in get_instance_filepaths() |> collect
         println("running brkga for instance $(instance)")
         context = instance |> open |> make_problem_context_from_file
@@ -95,7 +96,10 @@ function test_brkga(
         @show insertion[1][1] |> evaluator
 
         push!(populations, insertion)
+        push!(data, (insertion[1][1], evaluate(context, insertion[1][1]), get_cost(context, insertion[1][1])))
     end
 
+    json_data = [Dict("solution" => sol, "score" => eval, "cost" => cost) for (sol, eval, cost) in data]
+    write("brkga_output.json", JSON.json(json_data))
     return populations
 end
