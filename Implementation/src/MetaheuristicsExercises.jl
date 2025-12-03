@@ -1,6 +1,7 @@
 module MetaheuristicsExercises
 
 include("problem_context.jl")
+include("context_penalties.jl")
 include("parsing.jl")
 include("utilities.jl")
 include("evaluation.jl")
@@ -14,6 +15,8 @@ export make_problem_context_from_file, get_dependencies_used_by_package
 export get_all_used_dependencies, evaluate, generate_random_greedy_initial_solution
 export generate_greedy_initial_solution, generate_random_initial_solution
 export get_removed_dependencies_by_package
+
+export make_kpf_context_from_file, SolutionPenalties, ProblemContextPenalties
 
 export apply!, iterate_move
 export AddPackageMove, RemovePackageMove, FlipPackageMove
