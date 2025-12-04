@@ -184,13 +184,33 @@ function generate_random_greedy_initial_solution(problem::ProblemContextPenaltie
             continue
         end
 
-        push!(selected_items, idx)
-        weight += item_weight
-        update_active_pairs!(active_pairs, problem, idx, selected_items)
+        # Calculate penalty for adding this item
+        item_penalty = calculate_item_penalty(problem, idx, selected_items)
+        item_score = problem.scores[idx]
+
+        # Only add if net contribution is positive (score > penalty)
+        if item_score > item_penalty
+            push!(selected_items, idx)
+            weight += item_weight
+            update_active_pairs!(active_pairs, problem, idx, selected_items)
+        end
+
         fill_feasible_items_penalties!(feasible_items, items_heap, problem, α)
     end
 
     return SolutionPenalties(selected_items, active_pairs, weight)
+end
+
+function calculate_item_penalty(problem::ProblemContextPenalties, new_item::Integer, selected_items::Set{Integer})
+    total_penalty = 0
+    item_conflicts = get(problem.penalty_lookup, new_item, nothing)
+    if item_conflicts !== nothing
+        for item in selected_items
+            penalty = get(item_conflicts, item, 0)
+            total_penalty += penalty
+        end
+    end
+    return total_penalty
 end
 
 function update_active_pairs!(
@@ -199,13 +219,15 @@ function update_active_pairs!(
     new_item::Integer,
     selected_items::Set{Integer},
 )
-    for (pair, penalty) in problem.pair_penalties
-        (item1, item2) = pair
-        if (item1 == new_item || item2 == new_item)
-            other_item = item1 == new_item ? item2 : item1
-            if other_item in selected_items
-                active_pairs[pair] = penalty
-            end
+    item_conflicts = get(problem.penalty_lookup, new_item, nothing)
+    item_conflicts === nothing && return
+
+    for other_item in selected_items
+        penalty = get(item_conflicts, other_item, 0)
+        if penalty > 0
+            # Ensure consistent pair ordering (smaller index first)
+            pair = new_item < other_item ? (new_item, other_item) : (other_item, new_item)
+            active_pairs[pair] = penalty
         end
     end
 end
