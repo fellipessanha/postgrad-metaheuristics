@@ -1,8 +1,8 @@
 module MetaheuristicsExercises
 
 include("problem_context.jl")
-include("context_penalties.jl")
 include("parsing.jl")
+include("context_penalties.jl")
 include("utilities.jl")
 include("evaluation.jl")
 include("moves/moves.jl")
@@ -23,5 +23,8 @@ export AddPackageMove, RemovePackageMove, FlipPackageMove
 export AddDependencyMove, RemoveDependencyMove
 
 export BestImprovement, FirstImprovement, RandomSearch, Maximize, Minimize, local_search
+
+export test_brkga, test_brkga_kpf, test_brkga_kp_dependencies
+export GraspThresholdStrategy, PackagesStrategy
 
 end
