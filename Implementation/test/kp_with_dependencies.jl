@@ -1,0 +1,177 @@
+for instance in test_instance_filepaths
+    contents = open(instance)
+    context = make_problem_context_from_file(contents)
+
+    package_count    = context.package_count
+    dependency_count = context.dependency_count
+    relation_count   = context.relation_count
+    storage_size     = context.storage_size
+    summary          = join([package_count, dependency_count, relation_count, storage_size], '-')
+
+    @testset "$(instance): input conforms to file `metadata`" begin
+        @test occursin(summary, instance)
+    end
+
+    first_package_dependencies = [5, 13, 20, 26, 34, 39, 48, 83, 92, 94, 100]
+    other_package_dependencies = [18, 26, 34, 66, 75, 78, 88]
+
+    @testset "$(instance): dependency fetch by package conforms to expected" begin
+        @test get_dependencies_used_by_package(context, 1) == first_package_dependencies
+        @test get_dependencies_used_by_package(context, 14) == other_package_dependencies
+        @test get_all_used_dependencies(context, Set([1, 14])) ==
+              vcat(first_package_dependencies, other_package_dependencies) |> Set
+    end
+
+    @testset "$(instance): evaluation penalty is working" begin
+        # no oversize penalty
+        @test evaluate(context, Set([1, 14])) > 0
+        # with oversize penalty
+        @test evaluate(context, Set(1:30)) < 0
+    end
+
+    @testset "$(instance): constructive follows correct assumptions:" begin
+        @test_throws AssertionError generate_random_greedy_initial_solution(context, 2)
+        @info "threw successfully!"
+
+        greedy_solutions::AbstractVector{Solution} = [generate_greedy_initial_solution(context) for i in 1:2]
+        @test allequal([solution.used_packages for solution in greedy_solutions])
+        @test all([solution.weight <= context.storage_size for solution in greedy_solutions])
+        @info "greedy solutions seem consistent ☑️"
+
+        random_solutions = [generate_random_initial_solution(context) for i in 1:30]
+        @test allunique([solution.used_packages for solution in random_solutions])
+        @test all([solution.weight <= context.storage_size for solution in random_solutions])
+        @info "random solutions seem random 🤔"
+
+        random_evaluations = [evaluate(context, solution) for solution in random_solutions]
+        @test evaluate(context, greedy_solutions[1]) >=
+              mean([evaluate(context, solution) for solution in random_solutions])
+        @info "greedy approach performs better than random, on average 🧮"
+
+        check_solution = random_solutions[1]
+
+        used_package = check_solution.used_packages |> rand
+        @test evaluate(context, check_solution, AddPackageMove(used_package)) == 0
+        @info "AddPackageMove with used index did not increase cost 0️⃣"
+
+        unused_packages = setdiff(Set(1:context.package_count), check_solution.used_packages)
+        @test evaluate(context, check_solution, RemovePackageMove(unused_packages |> rand)) == 0
+        @info "Random RemovePackageMove with unused index has cost 0️⃣"
+    end
+
+    # will be used to test the moves
+    greedy_solution = generate_greedy_initial_solution(context)
+    greedy_evaluation = evaluate(context, greedy_solution)
+
+    @testset "$(instance): test removing package has expected results in dependencies" begin
+        removed_package = 69
+        removed_dependencies = get_removed_dependencies_by_package(greedy_solution, removed_package)
+
+        @test 54 in removed_dependencies
+    end
+
+    @testset "$(instance): adding and removing package evaluates to the same number" begin
+        for package in greedy_solution.used_packages
+            remove_move       = RemovePackageMove(package)
+            remove_score_diff = evaluate(context, greedy_solution, remove_move)
+            @test remove_score_diff < 0
+
+            removed_solution = apply!(context, copy(greedy_solution), remove_move)
+            @test greedy_evaluation + remove_score_diff == evaluate(context, removed_solution)
+
+            readd_move       = AddPackageMove(package)
+            readd_score_diff = evaluate(context, removed_solution, readd_move)
+
+            @test readd_score_diff > 0
+            @test remove_score_diff + readd_score_diff == 0
+
+            readded_solution = apply!(context, copy(removed_solution), readd_move)
+
+            @test greedy_solution.used_packages == readded_solution.used_packages
+            @test greedy_solution.used_dependencies == readded_solution.used_dependencies
+        end
+    end
+
+    greedy_evaluator = move::Move -> evaluate(context, greedy_solution, move)
+    @testset "$(instance): flip move behaviour should be identical to adding or removing" begin
+        for package in greedy_solution.used_packages
+            remove_move = RemovePackageMove(package)
+            flip_move   = FlipPackageMove(package)
+            @test greedy_evaluator(remove_move) == greedy_evaluator(flip_move)
+        end
+
+        for package in setdiff(collect(1:context.package_count), greedy_solution.used_packages)
+            add_move  = AddPackageMove(package)
+            flip_move = FlipPackageMove(package)
+            @test greedy_evaluator(add_move) == greedy_evaluator(flip_move)
+        end
+    end
+
+    @testset "$(instance): remove dependency move behaves as expected" begin
+        for dependency in (greedy_solution.used_dependencies |> keys)
+            remove_move = RemoveDependencyMove(dependency)
+            @test greedy_evaluator(remove_move) <= 0
+
+            removed_solution = apply!(context, copy(greedy_solution), remove_move)
+
+            @test isdisjoint(dependency, keys(removed_solution.used_dependencies))
+            @test isdisjoint(greedy_solution.used_dependencies[dependency], removed_solution.used_packages)
+        end
+    end
+
+    @testset "$(instance): add dependency move behaves as expected" begin
+        for dependency in 1:context.dependency_count
+            add_move = AddDependencyMove(dependency)
+            add_evaluation_diff = greedy_evaluator(add_move)
+            @test add_evaluation_diff >= 0
+
+            add_solution = apply!(context, copy(greedy_solution), add_move)
+
+            @test dependency in keys(add_solution.used_dependencies)
+            expected_weight_delta =
+                dependency in keys(greedy_solution.used_dependencies) ? 0 : context.dependency_weights[dependency]
+            @test add_solution.weight == greedy_solution.weight + expected_weight_delta
+        end
+    end
+
+    @testset "$(instance): check move iterators make sense" begin
+        for (move, expected_count) in Dict(
+            AddDependencyMove => context.dependency_count,
+            RemoveDependencyMove => context.dependency_count,
+            AddPackageMove => context.package_count,
+            RemovePackageMove => context.package_count,
+            FlipPackageMove => context.package_count,
+        )
+            @test iterate_move(context, move) |> collect |> length == expected_count
+        end
+    end
+
+    @testset "$(instance): check local_search works as expected" begin
+        best_move_add_dependency = local_search(context, greedy_solution, BestImprovement, Maximize, AddDependencyMove)
+        @test best_move_add_dependency[2] >= 0
+
+        best_move_remove_dependency =
+            local_search(context, greedy_solution, BestImprovement, Maximize, RemoveDependencyMove)
+        @test best_move_remove_dependency[2] == 0
+
+        best_move_add_package = local_search(context, greedy_solution, BestImprovement, Maximize, AddPackageMove)
+        @test best_move_add_package[2] >= 0
+
+        best_move_remove_package = local_search(context, greedy_solution, BestImprovement, Maximize, RemovePackageMove)
+        @test best_move_remove_package[2] == 0
+    end
+
+    @testset "$(instance): check Random local_search works as expected" begin
+        best_move_add_dependency = local_search(context, greedy_solution, RandomSearch, AddDependencyMove)
+        @test best_move_add_dependency[1] |> typeof <: AddDependencyMove
+
+        best_move_remove_dependency = local_search(context, greedy_solution, RandomSearch, RemoveDependencyMove)
+        @test best_move_remove_dependency[1] |> typeof <: RemoveDependencyMove
+
+        best_move_add_package = local_search(context, greedy_solution, RandomSearch, AddPackageMove)
+        @test best_move_add_package[1] |> typeof <: AddPackageMove
+
+        best_move_remove_package = local_search(context, greedy_solution, RandomSearch, RemovePackageMove)
+        @test best_move_remove_package[1] |> typeof <: RemovePackageMove
+    end
+end

@@ -161,3 +161,79 @@ function pop_random_item!(list::AbstractVector)
     index = rand(1:length(list))
     return pop_item_in_index!(list, index)
 end
+
+function generate_random_greedy_initial_solution(problem::ProblemContextPenalties, α::Real)::SolutionPenalties
+    @assert α <= 1 && α >= 0 "α ∈ [0, 1], got $(α)"
+
+    efficiencies = [(problem.scores[idx] / problem.weights[idx], idx) for idx in 1:problem.item_count]
+    items_heap = BinaryMaxHeap(efficiencies)
+
+    feasible_items = Vector{Tuple{Float64,Integer}}()
+    selected_items = Set{Integer}()
+    active_pairs = Dict{Tuple{Integer,Integer},Integer}()
+    weight = 0
+
+    fill_feasible_items_penalties!(feasible_items, items_heap, problem, α)
+
+    while !isempty(feasible_items) && weight < problem.capacity
+        _efficiency, idx = pop_random_item!(feasible_items)
+        item_weight = problem.weights[idx]
+
+        if weight + item_weight > problem.capacity
+            fill_feasible_items_penalties!(feasible_items, items_heap, problem, α)
+            continue
+        end
+
+        push!(selected_items, idx)
+        weight += item_weight
+        update_active_pairs!(active_pairs, problem, idx, selected_items)
+        fill_feasible_items_penalties!(feasible_items, items_heap, problem, α)
+    end
+
+    return SolutionPenalties(selected_items, active_pairs, weight)
+end
+
+function update_active_pairs!(
+    active_pairs::Dict{Tuple{Integer,Integer},Integer},
+    problem::ProblemContextPenalties,
+    new_item::Integer,
+    selected_items::Set{Integer},
+)
+    for (pair, penalty) in problem.pair_penalties
+        (item1, item2) = pair
+        if (item1 == new_item || item2 == new_item)
+            other_item = item1 == new_item ? item2 : item1
+            if other_item in selected_items
+                active_pairs[pair] = penalty
+            end
+        end
+    end
+end
+
+function should_fill_feasible_items_penalties(
+    feasible_items::AbstractVector,
+    items_heap::BinaryMaxHeap,
+    problem::ProblemContextPenalties,
+    α::Real,
+)
+    return !isempty(items_heap) && (isempty(feasible_items) || length(feasible_items) / problem.item_count < α)
+end
+
+function fill_feasible_items_penalties!(
+    feasible_items::AbstractVector,
+    items_heap::BinaryMaxHeap,
+    problem::ProblemContextPenalties,
+    α::Real,
+)
+    while should_fill_feasible_items_penalties(feasible_items, items_heap, problem, α)
+        pushfirst!(feasible_items, pop!(items_heap))
+    end
+end
+
+function generate_random_initial_solution(problem::ProblemContextPenalties)::SolutionPenalties
+    generate_random_greedy_initial_solution(problem, 1.0)
+end
+
+function generate_greedy_initial_solution(problem::ProblemContextPenalties)::SolutionPenalties
+    generate_random_greedy_initial_solution(problem, 0.0)
+end
