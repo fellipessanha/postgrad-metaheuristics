@@ -52,16 +52,6 @@ function local_search(problem::ProblemContext, solution::Solution, ::Type{Random
     if removable_packages |> length <= 0
         return nothing, 0
     end
-    move = removable_packages |> rand |> RemoveDependencyMove
-    move_evaluation = evaluate(problem, solution, move)
-    return move, move_evaluation
-end
-
-function local_search(problem::ProblemContext, solution::Solution, ::Type{RandomSearch}, ::Type{RemoveDependencyMove})
-    removable_packages = solution.used_dependencies |> keys |> collect
-    if removable_packages |> length <= 0
-        return nothing, 0
-    end
 
     removed_count = rand(0:length(removable_packages))
     move = removable_packages |> rand |> RemoveDependencyMove

@@ -5,6 +5,7 @@ struct ProblemContextPenalties
     weights::Vector{Integer}
     scores::Vector{Integer}
     pair_penalties::Dict{Tuple{Int,Int},Int}
+    penalty_lookup::Dict{Int,Dict{Int,Int}}  # item -> (other_item -> penalty)
 end
 
 mutable struct SolutionPenalties
@@ -43,8 +44,8 @@ function make_kpf_context_from_file(contents::IOStream)
 
         # Next line: id_i_0 id_i_1
         item_ids = parse_vector_line(contents |> readline, 2)
-        # Convert from 0-indexed to 1-indexed
-        item_pair = Tuple(item_ids .+ 1)
+        # Convert from 0-indexed to 1-indexed and ensure sorted order
+        item_pair = Tuple(sort(item_ids .+ 1))
 
         if haskey(pair_penalties, item_pair)
             pair_penalties[item_pair] += forfeit_cost
@@ -53,19 +54,30 @@ function make_kpf_context_from_file(contents::IOStream)
         end
     end
 
-    return ProblemContextPenalties(capacity, forfeit_pair_count, item_count, weights, scores, pair_penalties)
-end
+    # Build penalty lookup: item -> (other_item -> penalty)
+    penalty_lookup = Dict{Int,Dict{Int,Int}}()
+    for ((item1, item2), penalty) in pair_penalties
+        # Add both directions for O(1) lookup
+        if !haskey(penalty_lookup, item1)
+            penalty_lookup[item1] = Dict{Int,Int}()
+        end
+        penalty_lookup[item1][item2] = penalty
 
-function parse_vector_line(line::AbstractString)
-    string_vector = filter(entry -> !isempty(entry), line |> split)
-    return map(entry -> parse(Int, entry), string_vector)
-end
+        if !haskey(penalty_lookup, item2)
+            penalty_lookup[item2] = Dict{Int,Int}()
+        end
+        penalty_lookup[item2][item1] = penalty
+    end
 
-function parse_vector_line(line::AbstractString, correct_count::Integer)
-    parsed_line = parse_vector_line(line)
-    @assert length(parsed_line) == correct_count "Parsed line has incorrect number of elements. \
-        Should have $(correct_count), found $(length(parsed_line))"
-    return parsed_line
+    return ProblemContextPenalties(
+        capacity,
+        forfeit_pair_count,
+        item_count,
+        weights,
+        scores,
+        pair_penalties,
+        penalty_lookup,
+    )
 end
 
 function Base.copy(solution::SolutionPenalties)

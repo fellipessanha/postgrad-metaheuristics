@@ -69,6 +69,37 @@ function test_kp_with_penalties(instance_path)
         end
     end
 
+    @testset "$(instance_path): evaluation is working" begin
+        greedy_evaluation = evaluate(context, greedy_solution)
+        @test greedy_evaluation > 0
+        @info "greedy evaluation: $(greedy_evaluation)"
+
+        # Evaluation from items directly should match
+        items_evaluation = evaluate(context, greedy_solution.items)
+        @test greedy_evaluation == items_evaluation
+        @info "solution and items evaluations match ✓"
+
+        # Random solutions evaluation
+        random_solutions = [generate_random_initial_solution(context) for _ in 1:10]
+        random_evaluations = [evaluate(context, sol) for sol in random_solutions]
+        @test all(e -> e > 0, random_evaluations)
+        @info "all random solutions have positive evaluation"
+
+        # Greedy should be at least as good as average random
+        @test greedy_evaluation >= mean(random_evaluations)
+        @info "greedy performs better than random on average ✓"
+    end
+
+    @testset "$(instance_path): evaluation penalty calculation" begin
+        # Test that forfeit penalties reduce the score
+        total_score = sum([context.scores[i] for i in greedy_solution.items])
+        total_penalty = sum(values(greedy_solution.Pairs); init = 0)
+        expected_eval = total_score - total_penalty
+
+        @test evaluate(context, greedy_solution) == expected_eval
+        @info "evaluation correctly subtracts penalties: score=$(total_score), penalty=$(total_penalty), eval=$(expected_eval)"
+    end
+
     @testset "$(instance_path): instance metadata" begin
         @info "KPF Instance: $(basename(instance_path))"
         @info "  Items: $(item_count)"
@@ -78,5 +109,34 @@ function test_kp_with_penalties(instance_path)
         @info "  Total weight: $(sum(context.weights))"
         @info "  Greedy solution: $(length(greedy_solution.items)) items, weight $(greedy_solution.weight)"
         @info "  Active forfeit pairs: $(length(greedy_solution.Pairs))"
+    end
+
+    @testset "$(instance_path): BRKGA outperforms greedy" begin
+        greedy_evaluation = evaluate(context, greedy_solution)
+        @info "Greedy evaluation: $(greedy_evaluation)"
+
+        # Generate multiple random greedy solutions and get the best one
+        random_greedy_solutions = [generate_random_greedy_initial_solution(context, 0.5) for _ in 1:30]
+        random_greedy_evaluations = [evaluate(context, sol) for sol in random_greedy_solutions]
+        best_random_greedy_eval = maximum(random_greedy_evaluations)
+        @info "Best random greedy evaluation: $(best_random_greedy_eval)"
+
+        # Run BRKGA with GraspThresholdStrategy for KPF problems
+        brkga_result = test_brkga(
+            context;
+            strategy = MetaheuristicsExercises.GraspThresholdStrategy(0.5, 0.7),
+            iterations = 1000,
+            max_time = 5,
+        )
+        brkga_eval = brkga_result.best_score
+        @info "BRKGA evaluation: $(brkga_eval), runtime: $(brkga_result.runtime)s"
+
+        # BRKGA should be at least as good as greedy
+        @test brkga_eval >= greedy_evaluation
+        @info "BRKGA outperforms pure greedy ✓"
+
+        # BRKGA should be at least as good as the best random greedy
+        @test brkga_eval >= best_random_greedy_eval
+        @info "BRKGA outperforms best random greedy ✓"
     end
 end

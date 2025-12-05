@@ -68,3 +68,28 @@ end
 function calculate_solution_oversize_penalty(problem::ProblemContext, weight::Integer)
     return weight > problem.storage_size ? problem.penalty_cost : 0
 end
+
+function evaluate(problem::ProblemContextPenalties, solution::SolutionPenalties)
+    score = sum([problem.scores[i] for i in solution.items])
+    penalty = sum(values(solution.Pairs); init = 0)
+    oversize_penalty = solution.weight > problem.capacity ? sum(problem.scores) : 0
+
+    return score - penalty - oversize_penalty
+end
+
+function evaluate(problem::ProblemContextPenalties, items::Union{AbstractSet{T},AbstractArray{T}}) where {T<:Integer}
+    score = sum([problem.scores[i] for i in items])
+    weight = sum([problem.weights[i] for i in items])
+
+    penalty = 0
+    for (pair, cost) in problem.pair_penalties
+        (item1, item2) = pair
+        if item1 in items && item2 in items
+            penalty += cost
+        end
+    end
+
+    oversize_penalty = weight > problem.capacity ? sum(problem.scores) : 0
+
+    return score - penalty - oversize_penalty
+end
