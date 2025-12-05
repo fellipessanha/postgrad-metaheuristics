@@ -124,6 +124,9 @@ O algoritmo consiste em gerar uma população de soluções aleatória, \textit{
 gerar a representação da solução equivalente, avaliar todos os indivíduos e, similar ao processo de
 \textit{sobrevivência dos mais aptos}, gerar uma nova população, onde os melhores candidatos têm mais influência.
 
+Um diferencial da implementação desenvolvida foi o fato de que as populações iniciais era geradas através de um
+GRASP, com um $\alpha$ configurável nos parâmetros. Isso fez com que as soluções iniciais já tivessem uma
+qualidade maior, mas sem perder o elemento da aleatoriedade, tão importante em metaheurísticas.
 
 A implementação do algoritmo é proprietária, desenvolvida para uma disciplina sobre metaheurísticas na Universidade
 Federal Fluminense - UFF, pensada inicialmente para o Problema da Mochila com uniões de conjuntos (Set-Union Knapsack
@@ -136,13 +139,15 @@ Podemos ver nas tabelas~\ref{generic_interface_table}~e~\ref{brkga_interface_tab
     \centering
     \begin{tabular}{l|p{10cm}}
         \toprule
-        \textbf{Nome}           & \textbf{Descrição}                                                                                               \\
+        \textbf{Nome}             & \textbf{Descrição}                                                                                               \\
         \midrule
-        \texttt{ProblemContext} & Representa informações de contexto do problema, como capacidade da mochila, pesos e benefícios de itens, etc.    \\
+        \texttt{ProblemContext}   & Representa informações de contexto do problema, como capacidade da mochila, pesos e benefícios de itens, etc.    \\
         \midrule
-        \texttt{Solution}       & Representa uma solução para o problema                                                                           \\
+        \texttt{Solution}         & Representa uma solução para o problema                                                                           \\
         \midrule
-        \texttt{evaluate}       & Função que recebe o contexto do problema e uma solução, e retorna um número representando a qualidade da solução \\
+        \texttt{EncodingStrategy} & Representa uma estratégia de encoding                                                                            \\
+        \midrule
+        \texttt{evaluate}         & Função que recebe o contexto do problema e uma solução, e retorna um número representando a qualidade da solução \\
         \bottomrule
     \end{tabular}
     \caption{Detalhes sobre a interface genérica da implementação do BRKGA}
@@ -152,23 +157,25 @@ Podemos ver nas tabelas~\ref{generic_interface_table}~e~\ref{brkga_interface_tab
 
 \begin{table}[H]
     \centering
-    \begin{tabular}{l|p{10cm}}
+    \begin{tabular}{l|p{12cm}}
         \toprule
-        \textbf{Nome}           & \textbf{Descrição}                                                                                               \\
+        \textbf{Nome}   & \textbf{Descrição}                                                                       \\
         \midrule
-        \texttt{ProblemContext} & Representa informações de contexto do problema, como capacidade da mochila, pesos e benefícios de itens, etc.    \\
+        \texttt{encode} & Função que recebe um \texttt{ProblemContext} e um \texttt{EncodingStrategy} que gera uma
+        população nova e transforma sua representação usual em uma representação de chaves                         \\
         \midrule
-        \texttt{Solution}       & Representa uma solução para o problema                                                                           \\
-        \midrule
-        \texttt{evaluate}       & Função que recebe o contexto do problema e uma solução, e retorna um número representando a qualidade da solução \\
+        \texttt{decode} & que recebe um \texttt{ProblemContext}, uma combinação de chaves representada por um
+        \texttt{Array}, e um \texttt{EncodingStrategy} e retorna a representação usual da combinação de chaves informada
+        \\
         \bottomrule
     \end{tabular}
     \caption{Detalhes sobre a interface específica do BRKGA}
     \label{brkga_interface_table}
 \end{table}
 
-
-
+Na tabela~\ref{brkga_params_table} podemos ver as configurações dos parâmetros utilizados pelo BRKGA. Estes parâmetros foram calibrados de modo que
+o maior fator de parada era o tempo de execução. Também podemos ver, nos parâmetros abaixo, a variável $\alpha$, usada
+no algoritmo GRASP de geração de novos indivíduos.
 
 \begin{table}[H]
     \centering
@@ -177,13 +184,14 @@ Podemos ver nas tabelas~\ref{generic_interface_table}~e~\ref{brkga_interface_tab
         \textbf{Parâmetro}   & \textbf{Valor} \\
         \midrule
         Tamanho da população & 1000           \\
-        Threshold            & 0.5            \\
+        Viés de crossover    & 0.5            \\
 
         $\alpha$ (GRASP)     & 0.7            \\
         Iterações máximas    & 50000          \\
         \bottomrule
     \end{tabular}
     \caption{Parâmetros do BRKGA}
+    \label{brkga_params_table}
 \end{table}
 
 \section{Comparação de resultados}
@@ -258,7 +266,29 @@ tamanhos considerados grandes(1000 itens).
 
 \section{Conclusão}
 
-% TODO: Conclusões e trabalhos futuros
+Neste trabalho foram apresentadas e comparadas duas abordagens para resolver o Problema da Mochila com Penalidades
+(KPF): Programação Linear Inteira (ILP) utilizando o solver HiGHS, e o algoritmo metaheurístico BRKGA.
+
+Os resultados experimentais demonstraram que o desempenho relativo das abordagens varia conforme o tamanho da
+instância e o tempo disponível para execução. Para instâncias menores (500 e 700 itens), a abordagem ILP apresentou
+gaps médios inferiores, beneficiando-se de que o tempo necessário para convergir em instâncias menores também é menor
+para soluções de melhor qualidade. Já para instâncias maiores (800 e 1000 itens), o BRKGA demonstrou superioridade,
+mantendo gaps mais consistentes mesmo com o aumento da complexidade do problema.
+
+A técnica de warm start aplicada ao solver ILP, utilizando soluções geradas por um algoritmo guloso randomizado,
+mostrou-se eficaz para acelerar a convergência inicial. Da mesma forma, a estratégia de inicialização da população
+do BRKGA através do GRASP contribuiu para a qualidade das soluções encontradas.
+
+Como trabalhos futuros, sugere-se a exploração de:
+\begin{itemize}
+    \item Melhorar as estratégias de crossover e os critérios de avaliação da geração da solução inicial,
+          possibilitando assim uma variabilidade ainda maior entre as soluções inicial geradas por mutação
+    \item Calibração automática e eficiente dos parâmetros do BRKGA através de técnicas como irace ou SMAC,
+          ou uma calibração paramétrica, que por exemplo varie o tamanho do $\alpha$ utilizado no GRASP varie com o tamanho
+          da instância
+    \item Implementação de operadores de busca local para refinamento das soluções do BRKGA
+    \item Avaliação em instâncias de maior porte para verificar a escalabilidade das abordagens
+\end{itemize}
 
 \printbibliography
 
