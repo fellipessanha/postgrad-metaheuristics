@@ -58,58 +58,117 @@ Neste trabalho abordaremos a descrição de variações de um NP difíceis, simi
 Problem - KP), estratégias viáveis para resolver este problema em diferentes recortes temporais, e comparamos os
 resultados obtidos frente aos resultados ótimos conhecidos na literatura.
 
-\section{Problema Abordado}
+\section{Problema da Mochila com Penalidades (Knapsack Problem with Forfeits - KPF)}
 
-O Problema da Mochila com Penalidades (Knapsack Problem with Forfeits - KPF) é uma variante do problema clássico da
-mochila onde pares de itens podem ter penalidades associadas quando ambos são selecionados \cite{cerulli2020knapsack}.
-\cite{moura2021ils} propuseram uma heurística ILS para este problema.
+O problema abordado é definido sobre um conjunto $I$ de itens, com cada item $i$ é associado a um peso $w_i$ e um
+benefício $p_i \in \mathbb{N}$, consiste em encontrar um subconjunto $I' \subseteq I$, sujeito a:
 
-\subsection{Definição Formal}
+\begin{enumerate}
+    \item A soma dos pesos dos itens escolhidos não ultrapassarem a capacidade $H \in \mathbb{N}$
+    \item Para um conjunto $F$ de pares de itens $f$, associa-se uma penalidade $d_f$ ao um par de itens
+          $f = \{i, j\} \subseteq I$. Caso a solução avaliada contenha este par, ela deve ter a penalidade decrementada de
+          seu benefício total.
 
-Dado um conjunto de $n$ itens, onde cada item $i$ possui:
-\begin{itemize}
-    \item Peso $w_i$
-    \item Lucro $p_i$
-\end{itemize}
+\end{enumerate}
 
-E um conjunto de pares de forfeit $F$, onde cada par $f = \{i, j\} \in F$ possui uma penalidade $d_f$ aplicada quando ambos os itens $i$ e $j$ são selecionados.
+Desta maneira, o \textit{custo} podemos formular as restrições do problema como
 
-O objetivo é maximizar:
-\begin{equation}
-    \max \sum_{i=1}^{n} p_i x_i - \sum_{f \in F} d_f v_f
-\end{equation}
-
-Sujeito a:
 \begin{align}
     \sum_{i=1}^{n} w_i x_i & \leq H                                   \\
     x_i + x_j - v_f        & \leq 1, \quad \forall f = \{i, j\} \in F \\
     x_i                    & \in \{0, 1\}, \quad \forall i            \\
     v_f                    & \in [0, 1], \quad \forall f \in F
+    \label{eq_restrictions}
 \end{align}
 
-\section{Soluções Exploradas}
+E a função de objetivo como:
+\begin{equation}
+    \max \sum_{i=1}^{n} p_i x_i - \sum_{f \in F} d_f v_f
+    \label{eq_objective}
+\end{equation}
+
+Esta formulação foi apresentada pela primeira vez por~\cite{cerulli2020knapsack}, onde foi definido pela primeira vez
+o Problema da Mochila com Penalidades.
+
+\section{Soluções Propostas}
+
+Neste capítulo as soluções propostas para o problema serão exploradas, onde os detalhes de implementação e as
+estratégias escolhidas para tentar elevar os desempenhos serão comentadas.
 
 \subsection{Programação Linear Inteira (ILP)}
 
-A formulação ILP segue o modelo de Cerulli et al. \cite{cerulli2020knapsack}, onde:
-\begin{itemize}
-    \item $x_i = 1$ se o item $i$ é selecionado
-    \item $v_f$ representa a ativação da penalidade do par de forfeit $f$
-\end{itemize}
+A formulação ILP segue o modelo de Cerulli et al. \cite{cerulli2020knapsack}, utilizando as equações de modelagem da
+seção acima. A motivação por trás do uso desta solução foram de poder testar soluções fora do escopo de
+metaheurísticas, e de poder se aproveitar de uma solução que pode garantir otimalidade para o problema.
 
-A implementação utiliza o solver HiGHS através da biblioteca JuMP em Julia, com warm-start baseado em soluções GRASP.
+Outro fator determinante foi a facilidade e confiabilidade da implementação, fazendo uso do framework
+JuMP\cite{Lubin2023}, de programação matemática para a linguagem de programação Julia. A implementação foi feita
+utilizando o solver open source HiGHS\cite{huangfu2018highs}, que já vem integrado por padrão junto à biblioteca
+do JuMP.
+
+A fim de acelerar a convergência do solver, utilizamos uma técnica de \textit{warm start}~\cite{yildirim2002warm}, onde
+uma solução com algum nível de qualidade é fornecido ao solver, permitindo-o ignorar todas as soluções de avaliação
+inferior mais facilmente.
+
+A solução inicial utilizada no warm start foi gerada usando um algoritmo guloso randomizado, onde a solução melhora
+avaliada era escolhida entre alguns samples gerados com diferentes valores de $\alpha$.
+
 
 \subsection{BRKGA (Biased Random-Key Genetic Algorithm)}
 
-O BRKGA (Biased Random-Key Genetic Algorithm) foi implementado com uma estratégia de codificação inteligente baseada em GRASP:
+O Algoritmo Genético de Chaves Enviesadas Aleatórias (Biased Random-Key Genetic Algorithm - BRKGA) é um algoritmo
+baseado no Algoritmo Genético de Chaves Aleatórias, com uma diferenciação na maneira com que os \textit{pais} são
+escolhidos em uma dada população~\cite{gonccalves2011biased}
 
-\begin{itemize}
-    \item \textbf{Codificação}: Chaves aleatórias no intervalo $[0, 1]$
-    \item \textbf{Decodificação}: Estratégia de threshold onde itens com chave $\geq$ threshold são candidatos à seleção
-    \item \textbf{Warm-start}: Soluções iniciais geradas por heurística gulosa com diferentes valores de $\alpha$
-\end{itemize}
+O algoritmo consiste em gerar uma população de soluções aleatória, \textit{decodificar} esta população, isto é,
+gerar a representação da solução equivalente, avaliar todos os indivíduos e, similar ao processo de
+\textit{sobrevivência dos mais aptos}, gerar uma nova população, onde os melhores candidatos têm mais influência.
 
-\subsubsection{Parâmetros Utilizados}
+
+A implementação do algoritmo é proprietária, desenvolvida para uma disciplina sobre metaheurísticas na Universidade
+Federal Fluminense - UFF, pensada inicialmente para o Problema da Mochila com uniões de conjuntos (Set-Union Knapsack
+Problem - SUKP), mas desenvolvido de maneira genérica para ser utilizado em qualquer problema que fosse descrito
+seguindo a interface sugerida pelo programa.
+
+Podemos ver nas tabelas~\ref{generic_interface_table}~e~\ref{brkga_interface_table}
+
+\begin{table}[H]
+    \centering
+    \begin{tabular}{l|p{10cm}}
+        \toprule
+        \textbf{Nome}           & \textbf{Descrição}                                                                                               \\
+        \midrule
+        \texttt{ProblemContext} & Representa informações de contexto do problema, como capacidade da mochila, pesos e benefícios de itens, etc.    \\
+        \midrule
+        \texttt{Solution}       & Representa uma solução para o problema                                                                           \\
+        \midrule
+        \texttt{evaluate}       & Função que recebe o contexto do problema e uma solução, e retorna um número representando a qualidade da solução \\
+        \bottomrule
+    \end{tabular}
+    \caption{Detalhes sobre a interface genérica da implementação do BRKGA}
+    \label{generic_interface_table}
+\end{table}
+
+
+\begin{table}[H]
+    \centering
+    \begin{tabular}{l|p{10cm}}
+        \toprule
+        \textbf{Nome}           & \textbf{Descrição}                                                                                               \\
+        \midrule
+        \texttt{ProblemContext} & Representa informações de contexto do problema, como capacidade da mochila, pesos e benefícios de itens, etc.    \\
+        \midrule
+        \texttt{Solution}       & Representa uma solução para o problema                                                                           \\
+        \midrule
+        \texttt{evaluate}       & Função que recebe o contexto do problema e uma solução, e retorna um número representando a qualidade da solução \\
+        \bottomrule
+    \end{tabular}
+    \caption{Detalhes sobre a interface específica do BRKGA}
+    \label{brkga_interface_table}
+\end{table}
+
+
+
 
 \begin{table}[H]
     \centering
@@ -122,7 +181,6 @@ O BRKGA (Biased Random-Key Genetic Algorithm) foi implementado com uma estratég
 
         $\alpha$ (GRASP)     & 0.7            \\
         Iterações máximas    & 50000          \\
-        Tempo limite         & 60s            \\
         \bottomrule
     \end{tabular}
     \caption{Parâmetros do BRKGA}
@@ -131,7 +189,9 @@ O BRKGA (Biased Random-Key Genetic Algorithm) foi implementado com uma estratég
 \section{Comparação de resultados}
 
 Nesta seção veremos os desempenhos das diferentes estratégias desenvolvidas. Comparamos, também, os resultados com os
-ótimos conhecidos da literatura~\cite{moura2021ils}.
+ótimos conhecidos da literatura~\cite{moura2021ils}. Todos os algoritmos foram executados em uma máquina 11th Gen Intel
+Core i7-1165G7 de décima primeira geração, com 4 núcleos e 8 processadores lógicos
+
 
 \subsection{Instâncias de Teste}
 
@@ -139,9 +199,7 @@ Foram escolhidas vinte instâncias no total, de quatro tamanhos diferentes, 500 
 , visando avaliar o desempenho dos algoritmos desenvolvidos desde instâncias relativamente pequenas(500 itens) até
 tamanhos considerados grandes(1000 itens).
 
-
-
-\subsection{Comparação ILP vs BRKGA}
+\subsection{Comparação com ótimos globais}
 
 \begin{table}[H]
     \centering
@@ -178,6 +236,8 @@ tamanhos considerados grandes(1000 itens).
     \end{tabular}
     \caption{Resultados comparativos por tamanho de instância e tempo limite}
 \end{table}
+
+\subsection{Gaps médios por tamanho de instância}
 
 \begin{table}[H]
     \centering
