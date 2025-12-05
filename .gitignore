@@ -1,10 +1,13 @@
-deliveries/*
-!deliveries/*.tex
-!deliveries/*.pdf
-!deliveries/*.md
+deliveries/final_project/*_s_run
 
 *.log
 *.fls
 *.out
-*.synctex.gz
+*.synctex.*
 *.aux
+*.bbl
+*.toc
+*.fdb_latexmk
+*.bcf
+*.blg
+*.run.xml
