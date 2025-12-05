@@ -1,0 +1,205 @@
+\documentclass[12pt,a4paper]{article}
+
+% Packages
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[brazilian]{babel}
+\usepackage[style=abnt]{biblatex}
+\addbibresource{references.bib}
+\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{geometry}
+\usepackage{float}
+\usepackage{multirow}
+
+\geometry{margin=2.5cm}
+
+% Code listing style
+\lstset{
+    basicstyle=\ttfamily\small,
+    breaklines=true,
+    frame=single,
+    numbers=left,
+    numberstyle=\tiny\color{gray},
+    keywordstyle=\color{blue},
+    commentstyle=\color{green!60!black},
+    stringstyle=\color{orange},
+}
+
+% Title
+\title{Metaheurísticas para Problemas de Otimização Combinatória:\\
+Dependência de Pacotes e Mochila com Penalidades}
+\author{Fellipe Sanha}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+    Este trabalho apresenta a implementação e análise de metaheurísticas para dois problemas de otimização
+    combinatória: o Problema da Dependência de Pacotes e o Problema da Mochila com Penalidades (KPF). São exploradas
+    abordagens de Programação Linear Inteira (ILP) e o algoritmo BRKGA (Biased Random-Key Genetic Algorithm), com
+    comparação de desempenho em instâncias de diferentes tamanhos.
+\end{abstract}
+
+\tableofcontents
+\newpage
+
+\section{Introdução}
+
+Neste trabalho abordaremos a descrição de variações de um NP difíceis, similar ao Problema da Mochila(Knapsack
+Problem - KP), estratégias viáveis para resolver este problema em diferentes recortes temporais, e comparamos os
+resultados obtidos frente aos resultados ótimos conhecidos na literatura.
+
+\section{Problema Abordado}
+
+O Problema da Mochila com Penalidades (Knapsack Problem with Forfeits - KPF) é uma variante do problema clássico da
+mochila onde pares de itens podem ter penalidades associadas quando ambos são selecionados \cite{cerulli2020knapsack}.
+\cite{moura2021ils} propuseram uma heurística ILS para este problema.
+
+\subsection{Definição Formal}
+
+Dado um conjunto de $n$ itens, onde cada item $i$ possui:
+\begin{itemize}
+    \item Peso $w_i$
+    \item Lucro $p_i$
+\end{itemize}
+
+E um conjunto de pares de forfeit $F$, onde cada par $f = \{i, j\} \in F$ possui uma penalidade $d_f$ aplicada quando ambos os itens $i$ e $j$ são selecionados.
+
+O objetivo é maximizar:
+\begin{equation}
+    \max \sum_{i=1}^{n} p_i x_i - \sum_{f \in F} d_f v_f
+\end{equation}
+
+Sujeito a:
+\begin{align}
+    \sum_{i=1}^{n} w_i x_i & \leq H                                   \\
+    x_i + x_j - v_f        & \leq 1, \quad \forall f = \{i, j\} \in F \\
+    x_i                    & \in \{0, 1\}, \quad \forall i            \\
+    v_f                    & \in [0, 1], \quad \forall f \in F
+\end{align}
+
+\section{Soluções Exploradas}
+
+\subsection{Programação Linear Inteira (ILP)}
+
+A formulação ILP segue o modelo de Cerulli et al. \cite{cerulli2020knapsack}, onde:
+\begin{itemize}
+    \item $x_i = 1$ se o item $i$ é selecionado
+    \item $v_f$ representa a ativação da penalidade do par de forfeit $f$
+\end{itemize}
+
+A implementação utiliza o solver HiGHS através da biblioteca JuMP em Julia, com warm-start baseado em soluções GRASP.
+
+\subsection{BRKGA (Biased Random-Key Genetic Algorithm)}
+
+O BRKGA (Biased Random-Key Genetic Algorithm) foi implementado com uma estratégia de codificação inteligente baseada em GRASP:
+
+\begin{itemize}
+    \item \textbf{Codificação}: Chaves aleatórias no intervalo $[0, 1]$
+    \item \textbf{Decodificação}: Estratégia de threshold onde itens com chave $\geq$ threshold são candidatos à seleção
+    \item \textbf{Warm-start}: Soluções iniciais geradas por heurística gulosa com diferentes valores de $\alpha$
+\end{itemize}
+
+\subsubsection{Parâmetros Utilizados}
+
+\begin{table}[H]
+    \centering
+    \begin{tabular}{ll}
+        \toprule
+        \textbf{Parâmetro}   & \textbf{Valor} \\
+        \midrule
+        Tamanho da população & 1000           \\
+        Threshold            & 0.5            \\
+
+        $\alpha$ (GRASP)     & 0.7            \\
+        Iterações máximas    & 50000          \\
+        Tempo limite         & 60s            \\
+        \bottomrule
+    \end{tabular}
+    \caption{Parâmetros do BRKGA}
+\end{table}
+
+\section{Comparação de resultados}
+
+Nesta seção veremos os desempenhos das diferentes estratégias desenvolvidas. Comparamos, também, os resultados com os
+ótimos conhecidos da literatura~\cite{moura2021ils}.
+
+\subsection{Instâncias de Teste}
+
+Foram escolhidas vinte instâncias no total, de quatro tamanhos diferentes, 500 itens, 700 itens, 800 itens, e 1000 itens
+, visando avaliar o desempenho dos algoritmos desenvolvidos desde instâncias relativamente pequenas(500 itens) até
+tamanhos considerados grandes(1000 itens).
+
+
+
+\subsection{Comparação ILP vs BRKGA}
+
+\begin{table}[H]
+    \centering
+    \small
+    \begin{tabular}{cc|r|rr|rr|rr}
+        \toprule
+                              &                    &                & \multicolumn{2}{c|}{\textbf{60s}} & \multicolumn{2}{c|}{\textbf{120s}} & \multicolumn{2}{c}{\textbf{180s}}                                                   \\
+        \textbf{Tamanho}      & \textbf{Instância} & \textbf{Ótimo} & ILP                               & BRKGA                              & ILP                               & BRKGA         & ILP             & BRKGA         \\
+        \midrule
+        \multirow{5}{*}{500}  & 1                  & 2626           & 2145                              & \textbf{2244}                      & \textbf{2336}                     & 2244          & \textbf{ 2336 } & 2244          \\
+                              & 2                  & 2660           & \textbf{2308}                     & 2238                               & \textbf{2324}                     & 2238          & \textbf{2419}   & 2242          \\
+                              & 3                  & 2516           & \textbf{2207}                     & 2152                               & \textbf{2299}                     & 2163          & \textbf{2310}   & 2198          \\
+                              & 4                  & 2556           & \textbf{2233}                     & 2170                               & \textbf{2254}                     & 2170          & \textbf{2445}   & 2185          \\
+                              & 5                  & 2625           & \textbf{2297}                     & 2199                               & \textbf{2353}                     & 2199          & \textbf{2409}   & 2218          \\
+        \midrule
+        \multirow{5}{*}{700}  & 1                  & 3589           & \textbf{3156}                     & 3059                               & \textbf{3218}                     & 3059          & 3\textbf{299}   & 3059          \\
+                              & 2                  & 3679           & 2763                              & \textbf{2857}                      & 2775                              & 2\textbf{857} & \textbf{2913}   & 2857          \\
+                              & 3                  & 3664           & \textbf{3128}                     & 3124                               & \textbf{3189}                     & 3124          & \textbf{3206}   & 3124          \\
+                              & 4                  & 3647           & \textbf{3182}                     & 3085                               & \textbf{3267}                     & 3085          & \textbf{3267}   & 3085          \\
+                              & 5                  & 3596           & \textbf{3188}                     & 3082                               & \textbf{3156}                     & 3082          & \textbf{3128}   & 3082          \\
+        \midrule
+        \multirow{5}{*}{800}  & 1                  & 4184           & \textbf{3400}                     & 3398                               & 3400                              & \textbf{3427} & \textbf{3520}   & 3427          \\
+                              & 2                  & 4065           & 3300                              & \textbf{3371}                      & 3299                              & \textbf{3371} & 3299            & \textbf{3371} \\
+                              & 3                  & 4104           & \textbf{3475}                     & 3316                               & \textbf{3475}                     & 3388          & \textbf{3475}   & 3388          \\
+                              & 4                  & 4056           & 3218                              & \textbf{3349}                      & 3252                              & \textbf{3349} & 3320            & \textbf{3349} \\
+                              & 5                  & 4086           & 3366                              & \textbf{3389}                      & 3366                              & \textbf{3389} & 3386            & \textbf{3389} \\
+        \midrule
+        \multirow{5}{*}{1000} & 1                  & 4940           & 3852                              & \textbf{4028}                      & 3916                              & \textbf{4077} & 3928            & \textbf{4077} \\
+                              & 2                  & 4969           & 4034                              & \textbf{4105}                      & 4034                              & \textbf{4105} & 4034            & \textbf{4105} \\
+                              & 3                  & 5177           & 4040                              & \textbf{4230}                      & 4211                              & \textbf{4230} & 4273            & \textbf{4230} \\
+                              & 4                  & 5143           & 4091                              & \textbf{4235}                      & 4137                              & \textbf{4302} & 4212            & \textbf{4302} \\
+                              & 5                  & 5136           & 4094                              & \textbf{4143}                      & 4019                              & \textbf{4145} & 4040            & \textbf{4145} \\
+        \bottomrule
+    \end{tabular}
+    \caption{Resultados comparativos por tamanho de instância e tempo limite}
+\end{table}
+
+\begin{table}[H]
+    \centering
+    \small
+    \begin{tabular}{c|rr|rr|rr}
+        \toprule
+                         & \multicolumn{2}{c|}{\textbf{60s}} & \multicolumn{2}{c|}{\textbf{120s}} & \multicolumn{2}{c}{\textbf{180s}}                                                    \\
+        \textbf{Tamanho} & ILP                               & BRKGA                              & ILP                               & BRKGA          & ILP            & BRKGA          \\
+        \midrule
+        500              & \textbf{13.79}                    & 15.24                              & \textbf{10.88}                    & 15.15          & \textbf{8.17}  & 14.58          \\
+        700              & \textbf{15.13}                    & 16.31                              & \textbf{14.1}                     & 16.31          & \textbf{12.97} & 16.31          \\
+        800              & 18.23                             & \textbf{17.91}                     & 18.07                             & \textbf{17.42} & \textbf{17.06} & 17.42          \\
+        1000             & 19.81                             & \textbf{18.23}                     & 20.22                             & \textbf{17.76} & 19.82          & \textbf{17.76} \\
+        \bottomrule
+    \end{tabular}
+    \caption{GAP comparativo por tamanho de instância}
+\end{table}
+
+\section{Conclusão}
+
+% TODO: Conclusões e trabalhos futuros
+
+\printbibliography
+
+\end{document}
