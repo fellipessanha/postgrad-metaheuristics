@@ -9,6 +9,7 @@ include("moves/moves.jl")
 include("constructive.jl")
 include("search/search.jl")
 include("metaheuristics/metaheuristics.jl")
+include("optimization/kpf_ilp.jl")
 
 export ProblemContext, Solution, Move
 export make_problem_context_from_file, get_dependencies_used_by_package
@@ -26,5 +27,7 @@ export BestImprovement, FirstImprovement, RandomSearch, Maximize, Minimize, loca
 
 export test_brkga, test_brkga_kpf, test_brkga_kp_dependencies
 export GraspThresholdStrategy, PackagesStrategy
+
+export solve_kpf_ilp, solve_and_compare_kpf, run_benchmark_comparison
 
 end

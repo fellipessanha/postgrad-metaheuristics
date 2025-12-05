@@ -73,7 +73,6 @@ function evaluate(problem::ProblemContextPenalties, solution::SolutionPenalties)
     score = sum([problem.scores[i] for i in solution.items])
     penalty = sum(values(solution.Pairs); init = 0)
     oversize_penalty = solution.weight > problem.capacity ? sum(problem.scores) : 0
-    @info "score: $(score) / penalty: $(penalty) / oversize_penalty: $(oversize_penalty)"
 
     return score - penalty - oversize_penalty
 end
